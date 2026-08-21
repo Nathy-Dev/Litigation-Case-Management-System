@@ -25,7 +25,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Tabs } from '@/components/ui/Tabs';
+import { TabPanel, Tabs } from '@/components/ui/Tabs';
 
 const ICONS: Record<NotificationType, typeof Bell> = {
   'hearing.reminder': CalendarClock,
@@ -187,11 +187,13 @@ export function NotificationsPage() {
               },
             ]}
             active={tab}
+            idBase="notifications"
             onChange={(id) => setTab(id as typeof tab)}
             label="Notification filters"
           />
         </div>
 
+        <TabPanel idBase="notifications" tab={tab}>
         {visible.length === 0 ? (
           <CardBody className="border-t border-ink-200">
             <EmptyState
@@ -211,6 +213,7 @@ export function NotificationsPage() {
             ))}
           </ul>
         )}
+        </TabPanel>
       </Card>
 
       <p className="mt-3 text-[11px] text-ink-500">

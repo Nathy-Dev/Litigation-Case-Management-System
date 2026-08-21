@@ -18,7 +18,7 @@ import { useDataStore } from '@/store/dataStore';
 import { useCaseRow } from '@/hooks/useCaseData';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
-import { Tabs, type TabItem } from '@/components/ui/Tabs';
+import { TabPanel, Tabs, type TabItem } from '@/components/ui/Tabs';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge, ConfidentialBadge } from '@/components/ui/Badge';
@@ -197,6 +197,7 @@ export function CaseDetailPage() {
             <Tabs
               items={tabs}
               active={active}
+              idBase="case-detail"
               label="Case sections"
               onChange={(id) => {
                 const next = new URLSearchParams(params);
@@ -208,12 +209,12 @@ export function CaseDetailPage() {
           </div>
 
           <div>
-            {active === 'timeline' && <TimelineTab caseId={record.id} />}
-            {active === 'documents' && <DocumentsTab caseRecord={record} />}
-            {active === 'court-dates' && <CourtDatesTab caseRecord={record} />}
-            {active === 'tasks' && <CaseTasksTab caseRecord={record} />}
-            {active === 'notes' && <NotesTab caseRecord={record} />}
-            {active === 'related' && <RelatedTab caseRecord={record} />}
+            <TabPanel idBase="case-detail" tab="timeline">{active === 'timeline' && <TimelineTab caseId={record.id} />}</TabPanel>
+            <TabPanel idBase="case-detail" tab="documents">{active === 'documents' && <DocumentsTab caseRecord={record} />}</TabPanel>
+            <TabPanel idBase="case-detail" tab="court-dates">{active === 'court-dates' && <CourtDatesTab caseRecord={record} />}</TabPanel>
+            <TabPanel idBase="case-detail" tab="tasks">{active === 'tasks' && <CaseTasksTab caseRecord={record} />}</TabPanel>
+            <TabPanel idBase="case-detail" tab="notes">{active === 'notes' && <NotesTab caseRecord={record} />}</TabPanel>
+            <TabPanel idBase="case-detail" tab="related">{active === 'related' && <RelatedTab caseRecord={record} />}</TabPanel>
           </div>
         </div>
 

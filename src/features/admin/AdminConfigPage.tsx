@@ -21,7 +21,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/Modal';
-import { Tabs } from '@/components/ui/Tabs';
+import { TabPanel, Tabs } from '@/components/ui/Tabs';
 import { Input } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CaseTypeDialog, CourtDialog, DocumentTypeDialog, TagDialog } from './configDialogs';
@@ -192,11 +192,13 @@ export function AdminConfigPage() {
           <Tabs
             items={items}
             active={section}
+            idBase="admin-config"
             onChange={(id) => setSection(id as Section)}
             label="Configuration sections"
           />
         </div>
 
+        <TabPanel idBase="admin-config" tab={section}>
         {section !== 'status-flow' && (
           <CardBody className="border-b border-ink-200">
             <Input
@@ -359,6 +361,7 @@ export function AdminConfigPage() {
             </div>
           </CardBody>
         )}
+        </TabPanel>
       </Card>
 
       <CourtDialog open={courtOpen} onClose={() => setCourtOpen(false)} court={court} />

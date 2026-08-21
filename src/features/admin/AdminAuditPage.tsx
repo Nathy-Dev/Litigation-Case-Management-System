@@ -140,6 +140,7 @@ export function AdminAuditPage() {
     {
       key: 'actor',
       header: 'User',
+      width: '13rem',
       cell: (entry) => {
         const user = userById.get(entry.actorId);
         return user ? (
@@ -159,9 +160,13 @@ export function AdminAuditPage() {
       key: 'action',
       header: 'Action',
       cell: (entry) => (
+        // The record it touched is the longest text in the row and the first to
+        // be clipped, so both lines carry their full value as a tooltip.
         <div className="min-w-0">
-          <p className="truncate text-[13px] text-ink-900">{entry.action}</p>
-          <p className="truncate text-[11px] text-ink-500">
+          <p className="truncate text-[13px] text-ink-900" title={entry.action}>
+            {entry.action}
+          </p>
+          <p className="truncate text-[11px] text-ink-500" title={`${entry.entity} · ${entry.entityLabel}`}>
             {entry.entity} · {entry.entityLabel}
           </p>
         </div>
@@ -170,6 +175,7 @@ export function AdminAuditPage() {
     {
       key: 'outcome',
       header: 'Outcome',
+      width: '6.75rem',
       hideBelow: 'sm',
       cell: (entry) => (
         <Badge tone={entry.outcome === 'success' ? 'brand' : 'danger'} size="sm">
@@ -180,9 +186,10 @@ export function AdminAuditPage() {
     {
       key: 'ip',
       header: 'IP address',
+      width: '8.5rem',
       hideBelow: 'sm',
       cell: (entry) => (
-        <span className="tnum text-[12px] text-ink-700" title={entry.userAgent}>
+        <span className="tnum text-[12px] whitespace-nowrap text-ink-700" title={entry.userAgent}>
           {entry.ipAddress}
         </span>
       ),
@@ -316,6 +323,7 @@ export function AdminAuditPage() {
           rows={visible}
           rowKey={(entry) => entry.id}
           dense
+          layout="fixed"
           caption="Audit trail"
           empty={
             <EmptyState

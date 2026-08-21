@@ -52,8 +52,8 @@ export function SignInPage() {
         />
 
         <div className="relative flex items-center gap-3">
-          <span className="grid size-12 place-items-center rounded-xl bg-white ring-1 ring-white/30">
-            <CoatOfArms size={34} decorative />
+          <span className="grid size-12 place-items-center overflow-hidden rounded-xl bg-white p-1 ring-1 ring-white/30">
+            <CoatOfArms size={28} decorative />
           </span>
           <div>
             <p className="font-serif text-[17px] leading-tight font-semibold">
@@ -98,7 +98,9 @@ export function SignInPage() {
       <section className="flex flex-col justify-center bg-white px-5 py-10 sm:px-10">
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-7 flex items-center gap-3 lg:hidden">
-            <CoatOfArms size={40} decorative />
+            <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-1 ring-1 ring-ink-200/70">
+              <CoatOfArms size={26} decorative />
+            </span>
             <div>
               <p className="font-serif text-[16px] leading-tight font-semibold text-ink-900">
                 HYPREP Legal Unit

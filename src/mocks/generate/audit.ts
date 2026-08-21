@@ -60,7 +60,9 @@ export function buildAuditLog({
     const logins = intBetween(rng, 2, 6);
 
     for (let i = 0; i < logins; i += 1) {
-      const offset = i * 24 + intBetween(rng, 1, 9);
+      // Whole-hour offsets put several people's sign-in on the same instant, so
+      // each account gets its own minute within the hour.
+      const offset = i * 24 + intBetween(rng, 1, 9) + intBetween(rng, 0, 59) / 60;
       entries.push(
         entry(
           {

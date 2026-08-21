@@ -30,12 +30,12 @@ export function BrandLockup({ compact = false, tone = 'dark', to = '/', classNam
       {/* A white plate keeps the black shield and white supporters legible on green. */}
       <span
         className={cn(
-          'grid shrink-0 place-items-center rounded-lg bg-white',
+          'grid shrink-0 place-items-center overflow-hidden rounded-lg bg-white p-1',
           light ? 'ring-1 ring-white/25' : 'ring-1 ring-ink-200/70',
-          compact ? 'size-9' : 'size-10',
+          compact ? 'size-9' : 'size-11',
         )}
       >
-        <CoatOfArms size={compact ? 24 : 28} decorative />
+        <CoatOfArms size={compact ? 20 : 24} decorative />
       </span>
 
       {!compact && (

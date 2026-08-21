@@ -15,13 +15,24 @@ export function at(now: Date, daysFromNow: number, hour = 9, minute = 0): string
   return date.toISOString();
 }
 
+/**
+ * Subtracting whole hours or minutes from one clock reading leaves every
+ * derived timestamp carrying that reading's seconds — a page of audit rows all
+ * ending in the same `:51` reads as generated rather than recorded. The seconds
+ * are spread from the offset itself, so the data stays reproducible.
+ */
+function spreadSeconds(date: Date, offset: number): string {
+  date.setSeconds(Math.floor(Math.abs(offset) * 7919) % 60, 0);
+  return date.toISOString();
+}
+
 /** ISO timestamp `hoursAgo` before `now` — for audit trails and activity feeds. */
 export function hoursBefore(now: Date, hoursAgo: number): string {
-  return new Date(now.getTime() - hoursAgo * 3_600_000).toISOString();
+  return spreadSeconds(new Date(now.getTime() - hoursAgo * 3_600_000), hoursAgo);
 }
 
 export function minutesBefore(now: Date, minutesAgo: number): string {
-  return new Date(now.getTime() - minutesAgo * 60_000).toISOString();
+  return spreadSeconds(new Date(now.getTime() - minutesAgo * 60_000), minutesAgo);
 }
 
 export function daysBetween(from: string | Date, to: string | Date): number {
