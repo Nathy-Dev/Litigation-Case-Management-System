@@ -130,6 +130,14 @@ export function formatNumber(value: number | null | undefined) {
   return new Intl.NumberFormat('en-NG').format(value);
 }
 
+/**
+ * A count with its noun agreeing: "1 matter", "36 matters". Pass an explicit
+ * plural for the irregular ones ("1 party" / "3 parties").
+ */
+export function plural(count: number, singular: string, pluralForm = `${singular}s`) {
+  return `${formatNumber(count)} ${count === 1 ? singular : pluralForm}`;
+}
+
 export function formatPercent(value: number, fractionDigits = 0) {
   return `${(value * 100).toFixed(fractionDigits)}%`;
 }
@@ -183,6 +191,22 @@ export function shortCourtName(name: string | undefined | null) {
   const abbreviated = COURT_ABBREVIATIONS.find(([pattern]) => pattern.test(head.trim()))?.[1];
   const stem = abbreviated ?? head.trim();
   return seat ? `${stem}, ${seat}` : stem;
+}
+
+/**
+ * The party that identifies a matter where there is only room for a few words.
+ * Court titles read "A v. B" and HYPREP is on one side of nearly every matter
+ * in the register, so it is the *other* side that tells them apart.
+ */
+export function shortMatterLabel(title: string) {
+  const parties = title.split(/\s+v\.?\s+/i);
+  if (parties.length < 2) return title;
+  const other = parties.find((party) => !/hyprep/i.test(party)) ?? parties[1]!;
+  return other
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .replace(/\s*&\s*\d+\s*Ors\.?\s*$/i, '')
+    .replace(/\s*&\s*(Anor|Another)\.?\s*$/i, '')
+    .trim();
 }
 
 export function toDateInputValue(value: string | Date | null | undefined) {

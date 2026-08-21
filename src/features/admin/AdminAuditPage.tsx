@@ -170,7 +170,7 @@ export function AdminAuditPage() {
     {
       key: 'outcome',
       header: 'Outcome',
-      hideOnMobile: true,
+      hideBelow: 'sm',
       cell: (entry) => (
         <Badge tone={entry.outcome === 'success' ? 'brand' : 'danger'} size="sm">
           {entry.outcome === 'success' ? 'Success' : 'Failed'}
@@ -180,7 +180,7 @@ export function AdminAuditPage() {
     {
       key: 'ip',
       header: 'IP address',
-      hideOnMobile: true,
+      hideBelow: 'sm',
       cell: (entry) => (
         <span className="tnum text-[12px] text-ink-700" title={entry.userAgent}>
           {entry.ipAddress}

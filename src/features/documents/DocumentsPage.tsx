@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { FileText, FileWarning, HardDrive, Lock, ScanText, Search, Upload } from 'lucide-react';
 import type { CaseDocument } from '@/types';
-import { formatBytes, formatNumber } from '@/lib/format';
+import { formatBytes, formatNumber, plural } from '@/lib/format';
 import { useDataStore } from '@/store/dataStore';
 import { useCan } from '@/store/authStore';
 import { useVisibleCaseRows } from '@/hooks/useCaseData';
@@ -11,6 +11,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FilterMenu } from '@/components/ui/FilterMenu';
+import { InfoHint } from '@/components/ui/Tooltip';
 import { DocumentList } from './DocumentList';
 import { DocumentViewer } from './DocumentViewer';
 import { PickMatterForUpload } from './PickMatterForUpload';
@@ -98,7 +99,7 @@ export function DocumentsPage() {
         <StatCard
           label="Documents held"
           value={formatNumber(visible.length)}
-          hint={`${formatBytes(totalBytes)} across ${rows.length} matters`}
+          hint={`${formatBytes(totalBytes)} across ${plural(rows.length, 'matter')}`}
           icon={<FileText className="size-4" aria-hidden />}
         />
         <StatCard
@@ -118,7 +119,7 @@ export function DocumentsPage() {
         <StatCard
           label="Checked out"
           value={formatNumber(checkedOut)}
-          hint={`${confidential} confidential document${confidential === 1 ? '' : 's'} held`}
+          hint="Locked for editing by a colleague"
           icon={<FileWarning className="size-4" aria-hidden />}
         />
       </div>
@@ -196,7 +197,8 @@ export function DocumentsPage() {
             {confidential > 0 && (
               <span className="flex items-center gap-1.5">
                 <Lock className="size-3.5 text-ink-400" aria-hidden />
-                Confidential downloads are watermarked with your name and the time.
+                {plural(confidential, 'confidential file')}
+                <InfoHint label="Downloading a confidential file stamps your name and the time onto every page, and writes the download to the audit trail." />
               </span>
             )}
           </div>

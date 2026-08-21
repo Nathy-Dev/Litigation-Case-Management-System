@@ -9,6 +9,7 @@ import {
   chance,
   daysBetween,
   intBetween,
+  onSittingDay,
   rngFor,
 } from './helpers';
 
@@ -100,7 +101,10 @@ export function buildCourtDates(now: Date, cases: CaseRecord[]): CourtDate[] {
     // ---- Past sittings -----------------------------------------------------
     const created: CourtDate[] = [];
     if (record.filingDate) {
-      const firstSitting = daysBetween(record.filingDate, now) - 20;
+      // How long ago the most recent sitting was, per matter. A fixed gap here
+      // stacked every matter's last hearing onto the same square of the diary.
+      const lastSittingGap = intBetween(rng, 16, 124);
+      const firstSitting = daysBetween(record.filingDate, now) - lastSittingGap;
       if (firstSitting > 25) {
         const span = firstSitting - 25;
         const count = Math.min(8, Math.max(1, Math.round(span / 55) + 1));
@@ -110,7 +114,9 @@ export function buildCourtDates(now: Date, cases: CaseRecord[]): CourtDate[] {
           const daysAfterFiling = 25 + Math.round(step * k);
           const isFinal = k === count - 1;
           const [hour, minute] = pick(rng, SITTING_TIMES);
-          const startsAt = atTime(addDays(record.filingDate, daysAfterFiling), hour, minute);
+          const startsAt = onSittingDay(
+            atTime(addDays(record.filingDate, daysAfterFiling), hour, minute),
+          );
 
           const outcome: HearingOutcome = isFinal
             ? (CLOSING_OUTCOME[record.status] ?? 'Adjourned')
@@ -165,7 +171,7 @@ export function buildCourtDates(now: Date, cases: CaseRecord[]): CourtDate[] {
       const next: CourtDate = {
         id: `cd_${record.id.slice(5)}_n1`,
         caseId: record.id,
-        startsAt: at(now, offset, hour, minute),
+        startsAt: onSittingDay(at(now, offset, hour, minute)),
         durationMinutes: pick(rng, [30, 45, 60, 90]),
         courtId: record.courtId,
         courtRoom: room,
@@ -193,7 +199,7 @@ export function buildCourtDates(now: Date, cases: CaseRecord[]): CourtDate[] {
         created.push({
           ...next,
           id: `cd_${record.id.slice(5)}_n2`,
-          startsAt: at(now, offset + intBetween(rng, 34, 62), h2, m2),
+          startsAt: onSittingDay(at(now, offset + intBetween(rng, 34, 62), h2, m2)),
           purpose: record.status === 'Heard' ? 'Judgment' : 'Hearing',
           notes: 'Further date taken in open court.',
           reminderOffsetsHours: [168, 72, 24],

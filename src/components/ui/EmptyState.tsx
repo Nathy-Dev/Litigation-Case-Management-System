@@ -8,6 +8,12 @@ interface EmptyStateProps {
   action?: ReactNode;
   className?: string;
   compact?: boolean;
+  /**
+   * Heading level for the title. Stays a paragraph inside a card, but when the
+   * empty state *is* the page — a permission refusal, say — it must be the h1
+   * so the document still has one top-level heading.
+   */
+  as?: 'p' | 'h1' | 'h2';
 }
 
 export function EmptyState({
@@ -17,6 +23,7 @@ export function EmptyState({
   action,
   className,
   compact,
+  as: Title = 'p',
 }: EmptyStateProps) {
   return (
     <div className={cn('text-center', compact ? 'py-6' : 'py-12', className)}>
@@ -25,7 +32,9 @@ export function EmptyState({
           {icon}
         </span>
       )}
-      <p className="text-sm font-semibold text-ink-800">{title}</p>
+      <Title className={cn('font-semibold text-ink-800', Title === 'p' ? 'text-sm' : 'text-base')}>
+        {title}
+      </Title>
       {description && (
         <p className="mx-auto mt-1 max-w-md text-[13px] leading-relaxed text-ink-500">
           {description}

@@ -232,6 +232,7 @@ export function CaseListPage() {
             rows={paged.rows}
             rowKey={(row) => row.record.id}
             dense={density === 'compact'}
+            layout="fixed"
             caption="Case register"
             sort={{ key: sort.key, dir: sort.dir }}
             onSort={(key) =>

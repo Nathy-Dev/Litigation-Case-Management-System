@@ -98,7 +98,7 @@ export function ReportsPage() {
 
       <div className="grid gap-4 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start">
         <Card flush>
-          <CardHeader title="Standard reports" description="Six reports required by the TOR." />
+          <CardHeader title="Standard reports" hint="The six reports required by the TOR." />
           <nav aria-label="Standard reports" className="border-t border-ink-200">
             <ul>
               {data.reports.map((report) => (
@@ -123,9 +123,6 @@ export function ReportsPage() {
                         aria-hidden
                       />
                       {report.name}
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-ink-500">
-                      {report.description}
                     </span>
                   </button>
                 </li>

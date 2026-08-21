@@ -47,13 +47,30 @@ const BY_STATUS: Record<string, string[]> = {
   Archived: [],
 };
 
+/** Unit-level work, with the note each one actually needs. `[title, priority, note]`. */
 const STANDALONE_TASKS = [
-  ['Compile the quarterly litigation report for the Project Coordinator', 'High'],
-  ['Review the standard remediation contract dispute-resolution clause', 'Medium'],
-  ['Renew the Unit’s subscription to the law reports', 'Low'],
-  ['Update the external counsel fee schedule for the new financial year', 'Medium'],
-  ['Prepare the Legal Unit input to the NDPR compliance audit', 'High'],
-  ['Reconcile the case register against the registry cause lists', 'Medium'],
+  [
+    'Compile the quarterly litigation report for the Project Coordinator',
+    'High',
+    'Figures to be drawn from the case register as at the last day of the quarter.',
+  ],
+  [
+    'Review the standard remediation contract dispute-resolution clause',
+    'Medium',
+    'Arbitration seat and governing law to be settled with Procurement.',
+  ],
+  ['Renew the Unit’s subscription to the law reports', 'Low', ''],
+  [
+    'Update the external counsel fee schedule for the new financial year',
+    'Medium',
+    'Needs the Director’s approval before it is issued to the firms on the panel.',
+  ],
+  [
+    'Prepare the Legal Unit input to the NDPR compliance audit',
+    'High',
+    'Covers how matter files are retained and who may download a confidential document.',
+  ],
+  ['Reconcile the case register against the registry cause lists', 'Medium', ''],
 ] as const;
 
 const DESCRIPTIONS = [
@@ -97,8 +114,11 @@ export function buildTasks(now: Date, cases: CaseRecord[]): Task[] {
           ? pick(rng, ['In Progress', 'Blocked', 'Not Started'])
           : pick(rng, ['Not Started', 'In Progress', 'In Progress']);
 
+      // Lateness is already stated, in red, by the due date. Only a task that
+      // has slipped badly is escalated, so the priority badge keeps saying
+      // something the date does not.
       const priority: TaskPriority =
-        dueOffset < 0 && !completed
+        dueOffset < -14 && !completed
           ? record.priority === 'Low'
             ? 'Medium'
             : 'Critical'
@@ -108,7 +128,7 @@ export function buildTasks(now: Date, cases: CaseRecord[]): Task[] {
         id: `tsk_${record.id.slice(5)}_${index + 1}`,
         caseId: record.id,
         title,
-        description: pick(rng, DESCRIPTIONS),
+        description: chance(rng, 0.3) ? pick(rng, DESCRIPTIONS) : '',
         ownerId: pick(rng, candidates),
         assignedTeamId: chance(rng, 0.25) ? record.teamId : null,
         dueDate: at(now, dueOffset, 17, 0),
@@ -139,13 +159,13 @@ export function buildTasks(now: Date, cases: CaseRecord[]): Task[] {
   });
 
   // Unit-level tasks that are not tied to a single matter.
-  STANDALONE_TASKS.forEach(([title, priority], index) => {
+  STANDALONE_TASKS.forEach(([title, priority, note], index) => {
     const rng = rngFor('standalone-task', index);
     tasks.push({
       id: `tsk_unit_${index + 1}`,
       caseId: null,
       title,
-      description: 'Legal Unit administrative task — not linked to a specific matter.',
+      description: note,
       ownerId: pick(rng, ['usr_okonkwo', 'usr_adeyemi', 'usr_bassey', 'usr_ngozi', 'usr_musa']),
       assignedTeamId: null,
       dueDate: at(now, index === 0 ? -4 : intBetween(rng, 2, 40), 17, 0),

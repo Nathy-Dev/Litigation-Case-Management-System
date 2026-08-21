@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { addDays } from 'date-fns';
 import { ListChecks, Plus, Workflow } from 'lucide-react';
 import type { CaseRecord, Task } from '@/types';
-import { daysUntil } from '@/lib/format';
+import { daysUntil, plural } from '@/lib/format';
 import { useDataStore } from '@/store/dataStore';
 import { useCan, useCurrentUser } from '@/store/authStore';
 import { notify } from '@/store/uiStore';
@@ -71,7 +71,7 @@ export function CaseTasksTab({ caseRecord }: { caseRecord: CaseRecord }) {
     notify({
       variant: 'success',
       title: `${template.name} applied`,
-      description: `${template.steps.length} tasks raised and assigned.`,
+      description: `${plural(template.steps.length, 'task')} raised and assigned.`,
     });
   };
 

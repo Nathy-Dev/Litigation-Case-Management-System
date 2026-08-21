@@ -20,6 +20,7 @@ import { useAuthStore, useCurrentUser } from '@/store/authStore';
 import { notify, useUiStore } from '@/store/uiStore';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Disclosure';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
@@ -130,7 +131,7 @@ export function ProfilePage() {
           </Card>
 
           <Card>
-            <CardHeader title="Contact details" description="Used for reminders and court notices." />
+            <CardHeader title="Contact details" hint="Used for reminders and court notices." />
             <CardBody className="grid gap-3 sm:grid-cols-2">
               <Field label="Official e-mail" hint="Changed by an administrator only.">
                 {(props) => <Input value={user.email} readOnly disabled {...props} />}
@@ -158,13 +159,12 @@ export function ProfilePage() {
             </CardBody>
           </Card>
 
-          <Card>
-            <CardHeader
-              title="Security"
-              description={`Passwords expire every ${settings.passwordExpiryDays} days and must be at least ${settings.passwordMinLength} characters.`}
-              actions={<ShieldCheck className="size-4 text-brand-600" aria-hidden />}
-            />
-            <CardBody className="space-y-4">
+          <Disclosure
+            title="Security"
+            summary={`Two-factor ${user.mfaEnabled ? 'on' : 'off'} · password expires every ${settings.passwordExpiryDays} days`}
+            icon={<ShieldCheck className="size-4" aria-hidden />}
+          >
+            <div className="space-y-4">
               <div className="flex items-start justify-between gap-3 rounded-lg border border-ink-200 p-3">
                 <div className="min-w-0">
                   <p className="text-[13px] font-semibold text-ink-900">
@@ -232,15 +232,21 @@ export function ProfilePage() {
               >
                 Change password
               </Button>
-            </CardBody>
-          </Card>
+            </div>
+          </Disclosure>
 
-          <Card flush>
-            <CardHeader
-              title="Signed-in devices"
-              description="Sign out anything you do not recognise."
-            />
-            <ul className="border-t border-ink-200">
+          <Disclosure
+            title="Signed-in devices"
+            summary="Sign out anything you do not recognise"
+            meta={
+              <Badge tone="neutral" size="sm">
+                {mine.length}
+              </Badge>
+            }
+            icon={<Laptop className="size-4" aria-hidden />}
+            flush
+          >
+            <ul>
               {mine.map((session) => (
                 <li
                   key={session.id}
@@ -277,12 +283,12 @@ export function ProfilePage() {
                 <li className="px-3 py-3 text-[12px] text-ink-500">No other devices signed in.</li>
               )}
             </ul>
-          </Card>
+          </Disclosure>
         </div>
 
         <div className="space-y-4">
           <Card>
-            <CardHeader title="Notifications" description="How you would like to be reached." />
+            <CardHeader title="Notifications" hint="How you would like to be reached." />
             <CardBody className="space-y-2.5">
               {CHANNELS.map((channel) => (
                 <Checkbox
@@ -314,7 +320,7 @@ export function ProfilePage() {
           </Card>
 
           <Card>
-            <CardHeader title="Display" description="Applies to this browser only." />
+            <CardHeader title="Display" hint="Applies to this browser only." />
             <CardBody className="space-y-2">
               {(['comfortable', 'compact'] as const).map((option) => (
                 <button
@@ -340,17 +346,16 @@ export function ProfilePage() {
             </CardBody>
           </Card>
 
-          <Card>
-            <CardHeader
-              title="What you may do"
-              description={ROLE_DESCRIPTIONS[user.role]}
-              actions={
-                <Badge tone="neutral" size="sm">
-                  {permissions.length}
-                </Badge>
-              }
-            />
-            <CardBody className="space-y-2.5">
+          <Disclosure
+            title="What you may do"
+            summary={ROLE_DESCRIPTIONS[user.role]}
+            meta={
+              <Badge tone="neutral" size="sm">
+                {permissions.length}
+              </Badge>
+            }
+          >
+            <div className="space-y-2.5">
               {PERMISSION_GROUPS.map((group) => {
                 const granted = group.permissions.filter((permission) =>
                   permissions.includes(permission),
@@ -371,8 +376,8 @@ export function ProfilePage() {
                   </div>
                 );
               })}
-            </CardBody>
-          </Card>
+            </div>
+          </Disclosure>
         </div>
       </div>
 

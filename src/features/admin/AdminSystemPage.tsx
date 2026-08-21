@@ -17,6 +17,7 @@ import { useCan, useCurrentUser } from '@/store/authStore';
 import { DAY_MS, useNow } from '@/hooks/useNow';
 import { notify } from '@/store/uiStore';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Disclosure';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
@@ -142,199 +143,183 @@ export function AdminSystemPage() {
         </CardBody>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
-        <Card>
-          <CardHeader
-            title="Security & sessions"
-            description="Applied at sign-in and on every request."
-            actions={<ShieldCheck className="size-4 text-brand-600" aria-hidden />}
-          />
-          <CardBody className="grid gap-3 sm:grid-cols-2">
-            <Field label="Session timeout (minutes)" hint="Idle sessions are ended.">
+      <Disclosure
+        title="Security & sessions"
+        summary={`Signed out after ${value('sessionTimeoutMinutes')} idle minutes · locked after ${value('maxFailedLoginAttempts')} failed attempts`}
+        icon={<ShieldCheck className="size-4" aria-hidden />}
+        defaultOpen
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="Session timeout (minutes)" hint="Idle sessions are ended.">
+            {(props) => (
+              <Input
+                type="number"
+                min={5}
+                max={480}
+                disabled={!canManage}
+                value={value('sessionTimeoutMinutes')}
+                onChange={(event) => set('sessionTimeoutMinutes', Number(event.target.value))}
+                sizing="sm"
+                {...props}
+              />
+            )}
+          </Field>
+          <Field label="Failed attempts before lockout">
+            {(props) => (
+              <Input
+                type="number"
+                min={3}
+                max={10}
+                disabled={!canManage}
+                value={value('maxFailedLoginAttempts')}
+                onChange={(event) => set('maxFailedLoginAttempts', Number(event.target.value))}
+                sizing="sm"
+                {...props}
+              />
+            )}
+          </Field>
+          <Field label="Password expiry (days)">
+            {(props) => (
+              <Input
+                type="number"
+                min={30}
+                max={365}
+                disabled={!canManage}
+                value={value('passwordExpiryDays')}
+                onChange={(event) => set('passwordExpiryDays', Number(event.target.value))}
+                sizing="sm"
+                {...props}
+              />
+            )}
+          </Field>
+          <Field label="Minimum password length">
+            {(props) => (
+              <Input
+                type="number"
+                min={8}
+                max={32}
+                disabled={!canManage}
+                value={value('passwordMinLength')}
+                onChange={(event) => set('passwordMinLength', Number(event.target.value))}
+                sizing="sm"
+                {...props}
+              />
+            )}
+          </Field>
+          <div className="sm:col-span-2 lg:col-span-4 space-y-2">
+            <Checkbox
+              checked={value('passwordRequireComplexity')}
+              disabled={!canManage}
+              onChange={(event) => set('passwordRequireComplexity', event.target.checked)}
+              label="Require upper case, lower case, a digit and a symbol"
+            />
+            <Checkbox
+              checked={value('watermarkConfidentialDownloads')}
+              disabled={!canManage}
+              onChange={(event) => set('watermarkConfidentialDownloads', event.target.checked)}
+              label="Watermark confidential downloads"
+              description="Stamps the recipient's name, the time and the case ID on each page."
+            />
+            <Checkbox
+              checked={value('ssoEnabled')}
+              disabled={!canManage}
+              onChange={(event) => set('ssoEnabled', event.target.checked)}
+              label="Allow single sign-on with the HYPREP directory"
+            />
+          </div>
+        </div>
+      </Disclosure>
+
+      <Disclosure
+        title="Retention & archiving"
+        summary={`Archived ${value('retentionArchiveAfterYears')} years after conclusion, never deleted · ${formatNumber(archivable)} ready on the next run`}
+        icon={<Archive className="size-4" aria-hidden />}
+      >
+        <div className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Archive concluded matters after (years)">
               {(props) => (
                 <Input
                   type="number"
-                  min={5}
-                  max={480}
-                  disabled={!canManage}
-                  value={value('sessionTimeoutMinutes')}
-                  onChange={(event) => set('sessionTimeoutMinutes', Number(event.target.value))}
+                  min={1}
+                  max={25}
+                  disabled={!canRetain}
+                  value={value('retentionArchiveAfterYears')}
+                  onChange={(event) => set('retentionArchiveAfterYears', Number(event.target.value))}
                   sizing="sm"
                   {...props}
                 />
               )}
             </Field>
-            <Field label="Failed attempts before lockout">
+            <Field label="Backup retention (days)">
               {(props) => (
                 <Input
                   type="number"
-                  min={3}
-                  max={10}
-                  disabled={!canManage}
-                  value={value('maxFailedLoginAttempts')}
-                  onChange={(event) => set('maxFailedLoginAttempts', Number(event.target.value))}
-                  sizing="sm"
-                  {...props}
-                />
-              )}
-            </Field>
-            <Field label="Password expiry (days)">
-              {(props) => (
-                <Input
-                  type="number"
-                  min={30}
+                  min={7}
                   max={365}
                   disabled={!canManage}
-                  value={value('passwordExpiryDays')}
-                  onChange={(event) => set('passwordExpiryDays', Number(event.target.value))}
+                  value={value('backupRetentionDays')}
+                  onChange={(event) => set('backupRetentionDays', Number(event.target.value))}
                   sizing="sm"
                   {...props}
                 />
               )}
             </Field>
-            <Field label="Minimum password length">
+            <Field label="Backup schedule">
               {(props) => (
-                <Input
-                  type="number"
-                  min={8}
-                  max={32}
+                <Select
+                  value={value('backupSchedule')}
                   disabled={!canManage}
-                  value={value('passwordMinLength')}
-                  onChange={(event) => set('passwordMinLength', Number(event.target.value))}
+                  onChange={(event) =>
+                    set('backupSchedule', event.target.value as SystemSettings['backupSchedule'])
+                  }
                   sizing="sm"
                   {...props}
-                />
+                >
+                  <option value="hourly">Hourly</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                </Select>
               )}
             </Field>
-            <div className="sm:col-span-2 space-y-2">
-              <Checkbox
-                checked={value('passwordRequireComplexity')}
-                disabled={!canManage}
-                onChange={(event) => set('passwordRequireComplexity', event.target.checked)}
-                label="Require upper case, lower case, a digit and a symbol"
-              />
-              <Checkbox
-                checked={value('watermarkConfidentialDownloads')}
-                disabled={!canManage}
-                onChange={(event) => set('watermarkConfidentialDownloads', event.target.checked)}
-                label="Watermark confidential downloads"
-                description="Stamps the recipient's name, the time and the case ID on each page."
-              />
-              <Checkbox
-                checked={value('ssoEnabled')}
-                disabled={!canManage}
-                onChange={(event) => set('ssoEnabled', event.target.checked)}
-                label="Allow single sign-on with the HYPREP directory"
-              />
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader
-            title="Retention & archiving"
-            hint="Concluded matters are archived automatically, never deleted."
-            actions={<Archive className="size-4 text-brand-600" aria-hidden />}
-          />
-          <CardBody className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Archive concluded matters after (years)">
-                {(props) => (
-                  <Input
-                    type="number"
-                    min={1}
-                    max={25}
-                    disabled={!canRetain}
-                    value={value('retentionArchiveAfterYears')}
-                    onChange={(event) => set('retentionArchiveAfterYears', Number(event.target.value))}
-                    sizing="sm"
-                    {...props}
-                  />
-                )}
-              </Field>
-              <Field label="Backup retention (days)">
-                {(props) => (
-                  <Input
-                    type="number"
-                    min={7}
-                    max={365}
-                    disabled={!canManage}
-                    value={value('backupRetentionDays')}
-                    onChange={(event) => set('backupRetentionDays', Number(event.target.value))}
-                    sizing="sm"
-                    {...props}
-                  />
-                )}
-              </Field>
-              <Field label="Backup schedule">
-                {(props) => (
-                  <Select
-                    value={value('backupSchedule')}
-                    disabled={!canManage}
-                    onChange={(event) =>
-                      set('backupSchedule', event.target.value as SystemSettings['backupSchedule'])
-                    }
-                    sizing="sm"
-                    {...props}
-                  >
-                    <option value="hourly">Hourly</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                  </Select>
-                )}
-              </Field>
-              <Field label="Digest e-mails">
-                {(props) => (
-                  <Select
-                    value={value('digestFrequency')}
-                    disabled={!canManage}
-                    onChange={(event) =>
-                      set('digestFrequency', event.target.value as SystemSettings['digestFrequency'])
-                    }
-                    sizing="sm"
-                    {...props}
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="off">Off</option>
-                  </Select>
-                )}
-              </Field>
-            </div>
-            <p className="rounded-lg bg-ink-50 px-3 py-2 text-[12px] text-ink-700">
-              <span className="font-semibold text-ink-900">{formatNumber(archivable)}</span> concluded
-              matter{archivable === 1 ? '' : 's'} currently meet the archiving rule and will move to
-              the archive on the next nightly run.
-            </p>
-          </CardBody>
-        </Card>
-      </div>
-
-      {(canManage || canRetain) && (
-        <div className="sticky bottom-3 flex items-center justify-end gap-2 rounded-xl border border-ink-200 bg-white/95 p-2.5 backdrop-blur">
-          <p className="mr-auto text-[12px] text-ink-600">
-            {dirty ? 'Unsaved changes to system settings.' : 'All settings saved.'}
+            <Field label="Digest e-mails">
+              {(props) => (
+                <Select
+                  value={value('digestFrequency')}
+                  disabled={!canManage}
+                  onChange={(event) =>
+                    set('digestFrequency', event.target.value as SystemSettings['digestFrequency'])
+                  }
+                  sizing="sm"
+                  {...props}
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="off">Off</option>
+                </Select>
+              )}
+            </Field>
+          </div>
+          <p className="rounded-lg bg-ink-50 px-3 py-2 text-[12px] text-ink-700">
+            <span className="font-semibold text-ink-900">{formatNumber(archivable)}</span> concluded
+            matter{archivable === 1 ? '' : 's'} currently meet the archiving rule and will move to
+            the archive on the next nightly run.
           </p>
-          <Button disabled={!dirty} onClick={() => setDraft({})}>
-            Discard
-          </Button>
-          <Button
-            variant="primary"
-            disabled={!dirty}
-            onClick={save}
-            icon={<Save className="size-4" aria-hidden />}
-          >
-            Save settings
-          </Button>
         </div>
-      )}
+      </Disclosure>
 
-      <Card flush>
-        <CardHeader
-          title="Active sessions"
-          hint="Sign a device out remotely if an account may be compromised."
-        />
-        <ul className="border-t border-ink-200">
+      <Disclosure
+        title="Active sessions"
+        summary="Sign a device out remotely if an account may be compromised"
+        meta={
+          <Badge tone="neutral" size="sm">
+            {sessions.length}
+          </Badge>
+        }
+        icon={<Laptop className="size-4" aria-hidden />}
+        flush
+      >
+        <ul>
           {sessions.map((session) => {
             const user = users.find((item) => item.id === session.userId);
             return (
@@ -375,32 +360,47 @@ export function AdminSystemPage() {
             );
           })}
         </ul>
-      </Card>
+      </Disclosure>
 
-      <Card flush>
-        <CardHeader
-          title="Backups"
-          hint="Nightly full backup to the Abuja primary with replication to Lagos."
-          actions={
-            canManage && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  runBackup(actor?.id ?? 'system');
-                  notify({
-                    variant: 'success',
-                    title: 'Backup started',
-                    description: 'A full backup of the database and document store is running.',
-                  });
-                }}
-                icon={<Play className="size-4" aria-hidden />}
-              >
-                Run backup now
-              </Button>
-            )
-          }
-        />
-        <ul className="border-t border-ink-200">
+      <Disclosure
+        title="Backups"
+        summary={
+          lastBackup
+            ? `Last run ${formatRelative(lastBackup.startedAt)} · ${settings.backupSchedule} to the Abuja primary, replicated to Lagos`
+            : 'No backup on record'
+        }
+        meta={
+          lastBackup && (
+            <Badge tone={BACKUP_TONE[lastBackup.status]} size="sm">
+              {lastBackup.status === 'completed' ? 'Healthy' : lastBackup.status === 'running' ? 'Running' : 'Failed'}
+            </Badge>
+          )
+        }
+        icon={<Database className="size-4" aria-hidden />}
+        flush
+      >
+        {canManage && (
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-5">
+            <p className="text-[12px] text-ink-600">
+              Kept for {value('backupRetentionDays')} days, then rotated.
+            </p>
+            <Button
+              size="sm"
+              onClick={() => {
+                runBackup(actor?.id ?? 'system');
+                notify({
+                  variant: 'success',
+                  title: 'Backup started',
+                  description: 'A full backup of the database and document store is running.',
+                });
+              }}
+              icon={<Play className="size-4" aria-hidden />}
+            >
+              Run backup now
+            </Button>
+          </div>
+        )}
+        <ul className={cn(canManage && 'border-t border-ink-100')}>
           {backups.slice(0, 8).map((backup) => (
             <li
               key={backup.id}
@@ -426,7 +426,26 @@ export function AdminSystemPage() {
             </li>
           ))}
         </ul>
-      </Card>
+      </Disclosure>
+
+      {(canManage || canRetain) && (
+        <div className="sticky bottom-3 flex items-center justify-end gap-2 rounded-xl border border-ink-200 bg-white/95 p-2.5 backdrop-blur">
+          <p className="mr-auto text-[12px] text-ink-600">
+            {dirty ? 'Unsaved changes to system settings.' : 'All settings saved.'}
+          </p>
+          <Button disabled={!dirty} onClick={() => setDraft({})}>
+            Discard
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!dirty}
+            onClick={save}
+            icon={<Save className="size-4" aria-hidden />}
+          >
+            Save settings
+          </Button>
+        </div>
+      )}
 
       <ConfirmDialog
         open={revoking !== null}

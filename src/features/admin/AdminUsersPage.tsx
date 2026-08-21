@@ -107,7 +107,7 @@ export function AdminUsersPage() {
     {
       key: 'title',
       header: 'Designation',
-      hideOnMobile: true,
+      hideBelow: 'sm',
       cell: (user) => (
         <div className="min-w-0">
           <p className="truncate text-ink-800">{user.title}</p>
@@ -127,7 +127,7 @@ export function AdminUsersPage() {
     {
       key: 'team',
       header: 'Team',
-      hideOnMobile: true,
+      hideBelow: 'sm',
       cell: (user) => <span className="text-ink-700">{teamName(user.teamId)}</span>,
     },
     {
@@ -149,7 +149,8 @@ export function AdminUsersPage() {
     {
       key: 'lastLogin',
       header: 'Last sign-in',
-      hideOnMobile: true,
+      hideBelow: 'sm',
+      className: 'whitespace-nowrap',
       cell: (user) =>
         user.lastLoginAt ? (
           <span title={formatDateTime(user.lastLoginAt)} className="text-ink-700">

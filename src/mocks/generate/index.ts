@@ -99,15 +99,20 @@ export function buildDataset(now: Date = new Date()): Dataset {
   );
   const tags = TAGS.map((tag) => ({ ...tag, usageCount: tagUsage.get(tag.label) ?? 0 }));
 
-  // Storage used is derived from the actual document sizes.
+  // Storage used is derived from the actual document sizes, on top of the legacy
+  // material migrated into the store at go-live. The demo carries a 36-matter
+  // sample of the register, so without that baseline every quota indicator in
+  // the system would read 0% and the warning thresholds could not be seen.
+  const LEGACY_ARCHIVE_GB = 338.6;
   const storageUsedGb =
     Math.round(
-      (documents.reduce(
-        (total, document) =>
-          total + document.versions.reduce((sum, version) => sum + version.sizeBytes, 0),
-        0,
-      ) /
-        1_073_741_824) *
+      (LEGACY_ARCHIVE_GB +
+        documents.reduce(
+          (total, document) =>
+            total + document.versions.reduce((sum, version) => sum + version.sizeBytes, 0),
+          0,
+        ) /
+          1_073_741_824) *
         100,
     ) / 100;
 

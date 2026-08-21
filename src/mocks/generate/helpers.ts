@@ -37,6 +37,20 @@ export function addDays(iso: string, days: number): string {
   return date.toISOString();
 }
 
+/**
+ * Moves a date onto the next sitting day. Nigerian courts do not sit at the
+ * weekend, so any generated hearing that lands on a Saturday or Sunday is
+ * pushed to the Monday — otherwise the diary shows sittings no registry would
+ * ever list.
+ */
+export function onSittingDay(iso: string): string {
+  const date = new Date(iso);
+  const day = date.getDay();
+  if (day === 6) date.setDate(date.getDate() + 2);
+  else if (day === 0) date.setDate(date.getDate() + 1);
+  return date.toISOString();
+}
+
 /** Sets the clock time on an ISO string. */
 export function atTime(iso: string, hour: number, minute = 0): string {
   const date = new Date(iso);

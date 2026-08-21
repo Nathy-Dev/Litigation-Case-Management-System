@@ -10,6 +10,22 @@ interface AvatarProps {
   ring?: boolean;
 }
 
+/**
+ * `user.avatarColor` carries a palette *name* ("brand", "teal"), not a CSS
+ * colour, so it has to be looked up — handing it straight to `background-color`
+ * silently painted nothing for every name CSS does not happen to recognise.
+ * Each value is dark enough to carry white initials at AA contrast.
+ */
+const AVATAR_TINTS: Record<string, string> = {
+  brand: '#007546',
+  info: '#2358ad',
+  gold: '#a56d0b',
+  purple: '#6b4d91',
+  teal: '#0d7683',
+  ink: '#586666',
+  danger: '#b62f21',
+};
+
 const SIZES = {
   xs: 'size-6 text-[10px]',
   sm: 'size-7 text-[11px]',
@@ -31,7 +47,7 @@ export function Avatar({ user, size = 'md', className, ring }: AvatarProps) {
   return (
     <span
       title={user.fullName}
-      style={{ backgroundColor: user.avatarColor }}
+      style={{ backgroundColor: AVATAR_TINTS[user.avatarColor] ?? AVATAR_TINTS.brand }}
       className={cn(
         'grid shrink-0 place-items-center rounded-full font-semibold text-white select-none',
         SIZES[size],

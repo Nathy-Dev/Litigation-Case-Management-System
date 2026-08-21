@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import type { CaseType, Court, DocumentType, TagDefinition } from '@/types';
 import { CASE_STATUSES } from '@/types';
-import { formatNumber } from '@/lib/format';
+import { formatNumber, plural } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useDataStore } from '@/store/dataStore';
 import { useCan, useCurrentUser } from '@/store/authStore';
@@ -226,7 +226,7 @@ export function AdminConfigPage() {
                   }}
                   meta={
                     <Badge tone="neutral" size="sm">
-                      {formatNumber(cases.filter((record) => record.courtId === item.id).length)} matters
+                      {plural(cases.filter((record) => record.courtId === item.id).length, 'matter')}
                     </Badge>
                   }
                 />

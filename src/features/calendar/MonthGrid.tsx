@@ -12,6 +12,7 @@ import {
 } from 'date-fns';
 import type { CalendarEntry } from '@/lib/selectors/calendar';
 import { dayKeyOf, groupByDay } from '@/lib/selectors/calendar';
+import { shortMatterLabel } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { PRIORITY_TONE } from '@/components/ui/Badge';
 
@@ -152,7 +153,9 @@ export function MonthGrid({
                         <span className="tnum shrink-0 text-ink-500">
                           {format(new Date(entry.courtDate.startsAt), 'HH:mm')}
                         </span>
-                        <span className="truncate">{entry.row.record.caseId}</span>
+                        <span className="truncate">
+                          {shortMatterLabel(entry.row.record.title)}
+                        </span>
                       </button>
                     </li>
                   );

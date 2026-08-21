@@ -11,9 +11,18 @@ export interface Column<T> {
   align?: 'left' | 'right' | 'center';
   /** Set when the column can be sorted; the value is passed back to onSort. */
   sortKey?: string;
+  /**
+   * A CSS length ("11rem", "3rem") applied to the column — not a Tailwind
+   * class, since it is set as an inline style. Leave unset for the one column
+   * that should absorb the remaining width.
+   */
   width?: string;
-  /** Hidden below the `sm` breakpoint to keep narrow screens readable. */
-  hideOnMobile?: boolean;
+  /**
+   * Drop the column below this breakpoint. Every table here has more columns
+   * than a narrow screen can hold, so each one declares the width at which it
+   * stops earning its place; the detail page still carries the full record.
+   */
+  hideBelow?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   className?: string;
 }
 
@@ -27,6 +36,13 @@ interface DataTableProps<T> {
   empty?: ReactNode;
   /** Compact density for dense admin tables. */
   dense?: boolean;
+  /**
+   * `fixed` makes the declared column widths authoritative and hands the
+   * remainder to the one column left unsized. Use it where the table has more
+   * columns than the viewport can hold, so the wide column yields instead of
+   * pushing the rest off the edge. Every cell must be able to truncate.
+   */
+  layout?: 'auto' | 'fixed';
   caption?: string;
   className?: string;
 }
@@ -35,6 +51,15 @@ interface DataTableProps<T> {
 const EDGE_INSET = 'first:ps-4 last:pe-4 sm:first:ps-5 sm:last:pe-5';
 
 const ALIGN = { left: 'text-left', right: 'text-right', center: 'text-center' } as const;
+
+/** Written out in full because Tailwind only sees classes that appear literally. */
+const HIDE_BELOW = {
+  sm: 'hidden sm:table-cell',
+  md: 'hidden md:table-cell',
+  lg: 'hidden lg:table-cell',
+  xl: 'hidden xl:table-cell',
+  '2xl': 'hidden 2xl:table-cell',
+} as const;
 
 export function DataTable<T>({
   columns,
@@ -45,12 +70,15 @@ export function DataTable<T>({
   onRowClick,
   empty,
   dense,
+  layout = 'auto',
   caption,
   className,
 }: DataTableProps<T>) {
   return (
     <div className={cn('overflow-x-auto', className)}>
-      <table className="w-full min-w-full border-collapse text-sm">
+      <table
+        className={cn('w-full min-w-full border-collapse text-sm', layout === 'fixed' && 'table-fixed')}
+      >
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead>
           <tr className="border-b border-ink-200 bg-ink-50/60">
@@ -67,7 +95,7 @@ export function DataTable<T>({
                     'px-3 py-2.5 text-[11px] font-semibold tracking-wide text-ink-500 uppercase',
                     EDGE_INSET,
                     ALIGN[column.align ?? 'left'],
-                    column.hideOnMobile && 'hidden sm:table-cell',
+                    column.hideBelow && HIDE_BELOW[column.hideBelow],
                     column.className,
                   )}
                 >
@@ -126,7 +154,10 @@ export function DataTable<T>({
                       EDGE_INSET,
                       dense ? 'py-2' : 'py-3',
                       ALIGN[column.align ?? 'left'],
-                      column.hideOnMobile && 'hidden sm:table-cell',
+                      column.hideBelow && HIDE_BELOW[column.hideBelow],
+                      // A column's class covers the header *and* its cells, so
+                      // things like `whitespace-nowrap` only need saying once.
+                      column.className,
                     )}
                   >
                     {column.cell(row)}

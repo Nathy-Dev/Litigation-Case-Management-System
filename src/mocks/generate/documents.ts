@@ -91,6 +91,46 @@ const VERSION_NOTES = [
   'Added the certified true copy of the exhibit.',
 ];
 
+/**
+ * What a filing note actually says, per group. One sentence per group read as
+ * boilerplate down the library page — the same words under four different
+ * documents in a row — so each group gets a few, chosen by seed.
+ */
+const NOTES_BY_GROUP: Record<string, string[]> = {
+  Evidence: [
+    'Exhibited to the affidavit in support. Chain of custody on the site log.',
+    'Collected during the joint site inspection and certified by the analyst.',
+    'Tendered at the hearing and admitted without objection.',
+    'Produced on the claimant’s notice to produce.',
+  ],
+  Draft: [
+    'Working draft — not yet filed. Awaiting the Head of Unit’s approval.',
+    'Settled in chambers; to be filed once the fee is paid.',
+    'Circulated to external counsel for comment.',
+    'Held pending the Director’s instruction on the relief sought.',
+  ],
+  'Court Process': [
+    'Filed at the registry; certified true copy on the file.',
+    'Served on all parties by the court bailiff.',
+    'Filed out of time with leave of the court.',
+  ],
+  Correspondence: [
+    'Received by the Legal Unit and minuted to the matter owner.',
+    'Issued under the Director’s signature.',
+    'Acknowledged by the recipient’s counsel.',
+  ],
+  Internal: [
+    'Internal advice — not for release outside the Legal Unit.',
+    'Prepared for the Director’s brief on the matter.',
+    'Filed to the matter for record purposes.',
+  ],
+  Judgment: [
+    'Certified true copy obtained from the registry.',
+    'Judgment as delivered; enrolled order to follow.',
+    'Ruling on the interlocutory application.',
+  ],
+};
+
 const OCR_SNIPPETS = [
   'IN THE FEDERAL HIGH COURT OF NIGERIA IN THE PORT HARCOURT JUDICIAL DIVISION HOLDEN AT PORT HARCOURT. BETWEEN: HYDROCARBON POLLUTION REMEDIATION PROJECT (HYPREP) ... CLAIMANT AND ... DEFENDANT. STATEMENT OF CLAIM.',
   'CERTIFICATE OF ANALYSIS. Sample matrix: soil. Parameter: Total Petroleum Hydrocarbons (TPH). Result: 8,412 mg/kg. Intervention value: 5,000 mg/kg. Method: EPA 8015C. Analyst signature on file.',
@@ -150,10 +190,14 @@ export function buildDocuments(now: Date, cases: CaseRecord[]): CaseDocument[] {
           : 1;
 
       const author = pick(rng, record.assigneeIds.length ? record.assigneeIds : [record.matterOwnerId]);
+      // Revisions have to fit between the first upload and today, so the gap is
+      // taken from the window that is actually left rather than a fixed spread.
+      const windowDays = Math.max(0, daysBetween(firstUpload, now));
+      const versionGap = versionCount > 1 ? Math.floor(windowDays / versionCount) : 0;
       const versions: DocumentVersion[] = Array.from({ length: versionCount }, (_, v) => ({
         version: v + 1,
         uploadedById: v === 0 ? author : pick(rng, [...record.assigneeIds, record.matterOwnerId]),
-        uploadedAt: addDays(firstUpload, v * intBetween(rng, 2, 9)),
+        uploadedAt: addDays(firstUpload, v * Math.min(versionGap, intBetween(rng, 2, 9))),
         sizeBytes: intBetween(rng, minSize, maxSize),
         changeNote: v === 0 ? VERSION_NOTES[0]! : pick(rng, VERSION_NOTES.slice(1)),
         storageKey: `s3://hyprep-lcms-docs/${record.id}/${typeId}/v${v + 1}`,
@@ -175,11 +219,9 @@ export function buildDocuments(now: Date, cases: CaseRecord[]): CaseDocument[] {
         confidential: record.confidential || type.requiresConfidentiality,
         tags: record.tags.slice(0, 2),
         description:
-          type.group === 'Evidence'
-            ? 'Filed as an exhibit to the affidavit in support. Chain of custody recorded on the site log.'
-            : type.group === 'Draft'
-              ? 'Working draft — not yet filed. Subject to the Head of Unit’s approval.'
-              : `${type.name} in respect of ${record.title}.`,
+          NOTES_BY_GROUP[type.group] !== undefined
+            ? pick(rng, NOTES_BY_GROUP[type.group]!)
+            : `${type.name} in respect of ${record.title}.`,
         ocrText: ocrApplicable ? pick(rng, OCR_SNIPPETS) : null,
         ocrStatus: ocrApplicable ? (chance(rng, 0.12) ? 'queued' : 'completed') : 'not_applicable',
         checkedOutById: checkedOut ? author : null,

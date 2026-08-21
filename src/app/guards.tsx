@@ -27,6 +27,7 @@ export function RequirePermission({ anyOf, children }: { anyOf: Permission[]; ch
 
   return (
     <EmptyState
+      as="h1"
       icon={<ShieldAlert className="size-6" aria-hidden />}
       title="You do not have access to this area"
       description="Your role does not include the permissions needed for this page. Ask a system administrator if you believe this is wrong."

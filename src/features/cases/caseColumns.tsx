@@ -28,12 +28,12 @@ export function caseColumns({
       key: 'caseId',
       header: 'Case ID',
       sortKey: 'caseId',
-      width: 'w-[9.5rem]',
+      width: '10.5rem',
       cell: (row) => (
         <span className="block">
           <Link
             to={`/cases/${row.record.id}`}
-            className="font-mono text-[12px] font-medium text-brand-700 hover:underline"
+            className="block truncate font-mono text-[12px] font-medium text-brand-700 hover:underline"
           >
             {row.record.caseId}
           </Link>
@@ -50,11 +50,12 @@ export function caseColumns({
       header: 'Title',
       sortKey: 'title',
       cell: (row) => (
-        <span className="block max-w-[22rem]">
+        <span className="block">
           <span className="flex items-center gap-1.5">
             <Link
               to={`/cases/${row.record.id}`}
-              className="truncate text-[13px] font-medium text-ink-900 hover:text-brand-700"
+              title={row.record.title}
+              className="min-w-0 truncate text-[13px] font-medium text-ink-900 hover:text-brand-700"
             >
               {row.record.title}
             </Link>
@@ -62,7 +63,7 @@ export function caseColumns({
           </span>
           <span className="mt-0.5 flex items-center gap-2 text-[11px] text-ink-500">
             <PriorityBadge priority={row.record.priority} size="sm" />
-            <span className="truncate">{row.caseTypeName}</span>
+            <span className="min-w-0 truncate">{row.caseTypeName}</span>
             {row.record.claimValue ? (
               <span className="tnum hidden shrink-0 lg:inline">
                 {formatNaira(row.record.claimValue)}
@@ -75,9 +76,10 @@ export function caseColumns({
     {
       key: 'parties',
       header: 'Parties',
-      hideOnMobile: true,
+      width: '11rem',
+      hideBelow: '2xl',
       cell: (row) => (
-        <span className="block max-w-[16rem] truncate text-[12px] text-ink-600" title={row.partiesLabel}>
+        <span className="block truncate text-[12px] text-ink-600" title={row.partiesLabel}>
           {row.partiesLabel}
         </span>
       ),
@@ -86,9 +88,10 @@ export function caseColumns({
       key: 'court',
       header: 'Court',
       sortKey: 'courtName',
-      hideOnMobile: true,
+      width: '9rem',
+      hideBelow: 'lg',
       cell: (row) => (
-        <span className="block max-w-[12rem]">
+        <span className="block">
           <span className="block truncate text-[12px] text-ink-700">
             {shortCourtName(row.courtName)}
           </span>
@@ -103,22 +106,22 @@ export function caseColumns({
     {
       key: 'owner',
       header: 'Owner',
-      hideOnMobile: true,
-      width: 'w-[11rem]',
+      hideBelow: 'md',
+      width: '11rem',
       cell: (row) => <UserCell user={row.owner} />,
     },
     {
       key: 'status',
       header: 'Status',
       sortKey: 'status',
-      width: 'w-[8.5rem]',
+      width: '7.5rem',
       cell: (row) => <StatusBadge status={row.record.status} size="sm" />,
     },
     {
       key: 'nextHearing',
       header: 'Next hearing',
       sortKey: 'nextHearing',
-      width: 'w-[9rem]',
+      width: '8rem',
       cell: (row) => {
         if (!row.nextHearing) return <span className="text-[12px] text-ink-400">No date fixed</span>;
         const days = daysUntil(row.nextHearing.startsAt);
@@ -143,7 +146,7 @@ export function caseColumns({
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
       align: 'right',
-      width: 'w-14',
+      width: '3.25rem',
       cell: (row) => (
         <Dropdown
           width="w-52"
