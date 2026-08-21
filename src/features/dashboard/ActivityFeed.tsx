@@ -99,7 +99,11 @@ export function ActivityFeed({
                   )}
                 </p>
               </div>
-              {actor && <Avatar user={actor} size="xs" className="mt-1 hidden sm:block" />}
+              {actor && (
+                <span className="mt-1 hidden shrink-0 sm:block">
+                  <Avatar user={actor} size="xs" />
+                </span>
+              )}
             </li>
           );
         })}

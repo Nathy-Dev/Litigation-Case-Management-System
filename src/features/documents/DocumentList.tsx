@@ -135,7 +135,11 @@ export function DocumentList({
                 )}
               </span>
 
-              {author && <Avatar user={author} size="xs" className="mt-1 hidden sm:block" />}
+              {author && (
+                <span className="mt-1 hidden shrink-0 sm:block">
+                  <Avatar user={author} size="xs" />
+                </span>
+              )}
             </button>
           </li>
         );
