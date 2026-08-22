@@ -4,6 +4,7 @@ import { CalendarClock, FileText, Gavel, ListChecks, ScanText, Search, StickyNot
 import { globalSearch, type SearchGroup, type SearchHit } from '@/lib/selectors/search';
 import { cn } from '@/lib/utils';
 import { useDataset, useVisibleCaseRows } from '@/hooks/useCaseData';
+import { useCan, useCurrentUser } from '@/store/authStore';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -78,14 +79,23 @@ export function SearchResultsPage() {
   const [params, setParams] = useSearchParams();
   const data = useDataset();
   const rows = useVisibleCaseRows();
+  const user = useCurrentUser();
+  const canSeeUnitTasks = useCan('task.create');
+  const canSeePeople = useCan('user.view');
 
   const query = params.get('q') ?? '';
   const [group, setGroup] = useState<SearchGroup | 'all'>('all');
 
   const hits = useMemo(() => {
     const visible = new Set(rows.map((row) => row.record.id));
-    return globalSearch(data, query, visible, 40);
-  }, [data, query, rows]);
+    return globalSearch(
+      data,
+      query,
+      visible,
+      { userId: user?.id ?? null, canSeeUnitTasks, canSeePeople },
+      40,
+    );
+  }, [data, query, rows, user?.id, canSeeUnitTasks, canSeePeople]);
 
   const counts = useMemo(() => {
     const map = new Map<SearchGroup, number>();

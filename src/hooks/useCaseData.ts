@@ -37,13 +37,18 @@ export function useDashboardData() {
   const data = useDataStore();
   const rows = useVisibleCaseRows();
   const user = useCurrentUser();
+  const can = usePermission();
+  // Standing in the Legal Unit, not the right to view a task: an oversight
+  // stakeholder holds `task.view` but none of the Unit's own admin work.
+  const canSeeUnitTasks = can('task.create');
 
   return useMemo(() => {
     const now = new Date();
+    const taskAccess = { userId: user?.id ?? null, canSeeUnitTasks };
     return {
       rows,
-      metrics: buildDashboardMetrics(data, rows, now),
+      metrics: buildDashboardMetrics(data, rows, now, taskAccess),
       myWork: buildMyWork(data, rows, user?.id ?? null),
     };
-  }, [data, rows, user?.id]);
+  }, [data, rows, user?.id, canSeeUnitTasks]);
 }

@@ -119,8 +119,11 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* No colour here on purpose. An element selector beats an inherited value, so
+     setting one would override `text-white` on an ancestor and render every
+     heading on a dark surface in near-black. Headings inherit instead, and each
+     component states the colour it wants. */
   h1, h2, h3, h4 {
-    color: var(--color-ink-900);
     letter-spacing: -0.011em;
     font-weight: 600;
   }

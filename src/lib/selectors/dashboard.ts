@@ -1,6 +1,6 @@
 import type { AppNotification, CaseStatus, CourtDate, Task, User } from '@/types';
 import type { Dataset } from '@/mocks/generate';
-import type { CaseRow } from './cases';
+import { visibleTasks, type CaseRow, type TaskAccess } from './cases';
 import { AGE_BUCKETS, ageBucket, daysUntil } from '@/lib/format';
 import { CASE_STATUSES } from '@/types';
 
@@ -36,12 +36,13 @@ export function buildDashboardMetrics(
   data: Dataset,
   rows: CaseRow[],
   now: Date = new Date(),
+  taskAccess: TaskAccess = { userId: null, canSeeUnitTasks: true },
 ): DashboardMetrics {
   const visibleIds = new Set(rows.map((row) => row.record.id));
   const hearings = data.courtDates.filter(
     (sitting) => visibleIds.has(sitting.caseId) && !sitting.outcome,
   );
-  const tasks = data.tasks.filter((task) => !task.caseId || visibleIds.has(task.caseId));
+  const tasks = visibleTasks(data.tasks, rows, taskAccess);
   const openTasks = tasks.filter(
     (task) => task.status !== 'Completed' && task.status !== 'Cancelled',
   );
@@ -161,11 +162,14 @@ export function buildMyWork(data: Dataset, rows: CaseRow[], userId: string | nul
     return { myMatters: [], myHearings: [], myTasks: [], myOverdue: [], unread: [] };
   }
 
+  // Stakeholders count here too: for a read-only account these are the only
+  // matters they hold, and leaving them out emptied the whole dashboard.
   const myMatters = rows.filter(
     (row) =>
       row.record.matterOwnerId === userId ||
       row.record.assigneeIds.includes(userId) ||
-      row.record.externalCounselIds.includes(userId),
+      row.record.externalCounselIds.includes(userId) ||
+      row.record.stakeholderIds.includes(userId),
   );
   const myIds = new Set(myMatters.map((row) => row.record.id));
   const myTasks = data.tasks

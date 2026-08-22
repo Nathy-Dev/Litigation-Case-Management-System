@@ -178,6 +178,12 @@ export interface CaseRecord {
   matterOwnerId: string;
   assigneeIds: string[];
   externalCounselIds: string[];
+  /**
+   * Oversight stakeholders granted view-only access to this matter. They do not
+   * work the file, so they are held apart from `assigneeIds` — the distinction
+   * is what lets a read-only account see selected matters and nothing else.
+   */
+  stakeholderIds: string[];
   teamId: string | null;
   parties: Party[];
   relatedCases: RelatedCaseLink[];

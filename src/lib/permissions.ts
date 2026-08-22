@@ -135,6 +135,19 @@ export const ROLE_LABELS: Record<Role, string> = {
   READ_ONLY: 'Read-only Stakeholder',
 };
 
+/**
+ * The same thing in a few words, for rows and chips where the full sentence
+ * would only be clipped mid-word. Keep these short enough to sit beside a name.
+ */
+export const ROLE_SUMMARIES: Record<Role, string> = {
+  SUPER_ADMIN: 'Full system control',
+  ADMIN: 'Users, cases and reports',
+  LEGAL_STAFF: 'Runs matters end to end',
+  CASE_OFFICER: 'Data entry and uploads',
+  EXTERNAL_COUNSEL: 'Briefed matters only',
+  READ_ONLY: 'Views selected matters',
+};
+
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   SUPER_ADMIN:
     'Full control: manage users, roles, system settings, data retention, backups and audit logs.',

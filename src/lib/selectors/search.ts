@@ -2,6 +2,7 @@ import type { CaseNote, CaseRecord, CaseStatusChange, CourtDate, Task, TimelineE
 import type { Dataset } from '@/mocks/generate';
 import { buildTimeline } from '@/mocks/generate/timeline';
 import { matchesQuery, truncate } from '@/lib/utils';
+import type { TaskAccess } from './cases';
 
 /** Per-case timeline, derived on demand from that matter's own records only. */
 export function selectCaseTimeline(data: Dataset, caseId: string): TimelineEvent[] {
@@ -57,10 +58,22 @@ export interface SearchHit {
  * Global search (TOR §16). Covers matter metadata, document names *and* the
  * OCR-extracted contents, court diary entries, tasks, notes and people.
  */
+/**
+ * Two groups in the results are not governed by matter access, so they are
+ * governed explicitly: the Unit's own unbound tasks, and the staff directory.
+ * Without this a stakeholder could search their way to a person and follow the
+ * hit to an admin screen they are not allowed to open.
+ */
+export interface SearchAccess extends TaskAccess {
+  /** The staff directory. Pass `user.view`. */
+  canSeePeople: boolean;
+}
+
 export function globalSearch(
   data: Dataset,
   query: string,
   visibleCaseIds: Set<string>,
+  access: SearchAccess,
   limitPerGroup = 6,
 ): SearchHit[] {
   const trimmed = query.trim();
@@ -142,7 +155,11 @@ export function globalSearch(
     );
 
   data.tasks
-    .filter((task) => !task.caseId || visibleCaseIds.has(task.caseId))
+    .filter((task) =>
+      task.caseId
+        ? visibleCaseIds.has(task.caseId)
+        : access.canSeeUnitTasks || task.ownerId === access.userId,
+    )
     .filter((task) => matchesQuery(`${task.title} ${task.description}`, trimmed))
     .slice(0, limitPerGroup)
     .forEach((task) =>
@@ -171,7 +188,7 @@ export function globalSearch(
       }),
     );
 
-  data.users
+  (access.canSeePeople ? data.users : [])
     .filter((user) => matchesQuery(`${user.fullName} ${user.email} ${user.title} ${user.firm ?? ''}`, trimmed))
     .slice(0, limitPerGroup)
     .forEach((user) =>

@@ -133,8 +133,38 @@ export function visibleToUser(rows: CaseRow[], user: User | null, canViewAll: bo
     return (
       record.matterOwnerId === user.id ||
       record.assigneeIds.includes(user.id) ||
-      record.externalCounselIds.includes(user.id)
+      record.externalCounselIds.includes(user.id) ||
+      record.stakeholderIds.includes(user.id)
     );
+  });
+}
+
+/**
+ * Who may see a task not bound to any matter.
+ *
+ * `canSeeUnitTasks` is the Legal Unit's own membership test — pass `task.create`
+ * for it. Standalone tasks are the Unit's internal work (the quarterly report,
+ * the fee schedule, the law-reports subscription), so an oversight stakeholder
+ * or a briefed external firm has no business in them even though both hold
+ * `task.view`.
+ */
+export interface TaskAccess {
+  userId: string | null;
+  canSeeUnitTasks: boolean;
+}
+
+/**
+ * Tasks follow the register: no access to the matter, no access to its tasks.
+ * Applied everywhere a task is counted or listed so the dashboard cards, the
+ * task board and the search results cannot disagree.
+ */
+export function visibleTasks(tasks: Task[], rows: CaseRow[], access: TaskAccess): Task[] {
+  const allowed = new Set(rows.map((row) => row.record.id));
+  return tasks.filter((task) => {
+    if (task.caseId) return allowed.has(task.caseId);
+    // Someone assigned a unit task keeps it either way; otherwise it takes
+    // membership of the Unit to see it at all.
+    return access.canSeeUnitTasks || task.ownerId === access.userId;
   });
 }
 

@@ -176,6 +176,9 @@ export const useDataStore = create<DataStore>()((set, get) => ({
       id: makeId('case'),
       caseId: `HYP/LCMS/${year}/${String(sequence).padStart(4, '0')}`,
       caseReference: input.caseReference ?? null,
+      // Oversight access is granted after the matter is opened, never at
+      // creation, so a new file starts visible only to the people working it.
+      stakeholderIds: [],
       title: input.title,
       suitNumber: input.suitNumber,
       courtId: input.courtId,

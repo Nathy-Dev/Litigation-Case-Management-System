@@ -9,6 +9,7 @@ import { useUiStore } from '@/store/uiStore';
 import { Avatar } from '@/components/ui/Avatar';
 import { Dropdown, MenuItem, MenuLabel, MenuSeparator } from '@/components/ui/Dropdown';
 import { ROLES } from '@/types';
+import { DEMO_MODE } from '@/lib/env';
 
 function SearchTrigger() {
   const open = useUiStore((state) => state.setCommandPalette);
@@ -251,7 +252,7 @@ export function Topbar() {
       <SearchTrigger />
 
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-        <RoleSwitcher />
+        {DEMO_MODE && <RoleSwitcher />}
         <NotificationsBell />
         <UserMenu />
       </div>

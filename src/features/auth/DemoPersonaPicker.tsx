@@ -1,6 +1,6 @@
 import { ChevronRight, Users } from 'lucide-react';
 import { ROLES, type Role } from '@/types';
-import { ROLE_DESCRIPTIONS, ROLE_LABELS } from '@/lib/permissions';
+import { ROLE_LABELS, ROLE_SUMMARIES } from '@/lib/permissions';
 import { useDataStore } from '@/store/dataStore';
 import { useAuthStore } from '@/store/authStore';
 import { Avatar } from '@/components/ui/Avatar';
@@ -44,7 +44,7 @@ export function DemoPersonaPicker({ onPicked }: { onPicked: () => void }) {
                   {ROLE_LABELS[user.role]}
                 </span>
                 <span className="block truncate text-[11px] text-ink-500">
-                  {user.fullName} · {ROLE_DESCRIPTIONS[user.role]}
+                  {user.fullName} · {ROLE_SUMMARIES[user.role]}
                 </span>
               </span>
               <ChevronRight

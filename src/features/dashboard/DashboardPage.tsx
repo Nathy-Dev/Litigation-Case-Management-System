@@ -76,7 +76,9 @@ export function DashboardPage() {
             {ROLE_LABELS[user?.role ?? 'READ_ONLY']} · {formatDateLong(new Date().toISOString())} ·{' '}
             {canSeeAll
               ? 'You are seeing every matter on the register.'
-              : 'You are seeing the matters assigned to you.'}
+              : isStakeholder
+                ? 'You are seeing the matters shared with you for oversight.'
+                : 'You are seeing the matters assigned to you.'}
           </>
         }
         actions={
@@ -118,7 +120,10 @@ export function DashboardPage() {
           to="/calendar"
         />
         <StatCard
-          label="Open tasks"
+          // Scoped in the label, because beside "My tasks — nothing
+          // outstanding" a bare "Open tasks: 22" reads as a contradiction
+          // rather than as the workload on the matters you hold.
+          label={canSeeAll ? 'Open tasks' : 'Tasks on my matters'}
           value={formatNumber(metrics.openTasks)}
           hint={metrics.overdueTasks > 0 ? `${metrics.overdueTasks} overdue` : 'None overdue'}
           icon={<ListTodo className="size-4" aria-hidden />}
@@ -146,7 +151,7 @@ export function DashboardPage() {
                   divided
                 />
                 <div className="px-2 py-4 sm:px-4">
-                  <CategoryBarChart data={statusData} height={300} />
+                  <CategoryBarChart data={statusData} height={300} emptyMessage="No matters have been shared with you yet." />
                 </div>
               </Card>
               <Card flush>
@@ -156,7 +161,7 @@ export function DashboardPage() {
                   divided
                 />
                 <div className="px-2 py-4 sm:px-4">
-                  <TrendChart data={metrics.filingTrend} />
+                  <TrendChart data={metrics.filingTrend} emptyMessage="No filings or conclusions recorded in the last twelve months." />
                 </div>
               </Card>
             </>
@@ -190,7 +195,7 @@ export function DashboardPage() {
                     divided
                   />
                   <div className="px-2 py-4 sm:px-4">
-                    <CategoryBarChart data={statusData} height={280} />
+                    <CategoryBarChart data={statusData} height={280} emptyMessage="No matters on the register yet." />
                   </div>
                 </Card>
               )}
@@ -217,7 +222,11 @@ export function DashboardPage() {
             <Card flush>
               <CardHeader title="Matters by court tier" divided />
               <div className="px-2 py-4">
-                <DonutChart data={tierData} centreLabel={formatNumber(metrics.totalMatters)} />
+                <DonutChart
+                  data={tierData}
+                  centreLabel={formatNumber(metrics.totalMatters)}
+                  emptyMessage="No matters have been shared with you yet."
+                />
               </div>
             </Card>
           )}
@@ -226,7 +235,11 @@ export function DashboardPage() {
             <MattersPanel
               rows={myWork.myMatters}
               title="Assigned to me"
-              description="Matters where you are owner, assignee or counsel."
+              description={
+                isStakeholder
+                  ? 'Matters shared with you for oversight.'
+                  : 'Matters where you are owner, assignee or counsel.'
+              }
               limit={5}
               emptyMessage="No matters are assigned to you yet."
             />
@@ -269,7 +282,7 @@ export function DashboardPage() {
               divided
             />
             <div className="px-2 py-4 sm:px-4">
-              <TrendChart data={metrics.filingTrend} />
+              <TrendChart data={metrics.filingTrend} emptyMessage="No filings or conclusions recorded in the last twelve months." />
             </div>
           </Card>
           <Card flush>
@@ -284,6 +297,7 @@ export function DashboardPage() {
                 data={metrics.byAgeBucket.map((entry) => ({ label: entry.bucket, value: entry.count }))}
                 height={250}
                 colour="#b8860b"
+                emptyMessage="No matters on the register yet."
               />
             </div>
           </Card>

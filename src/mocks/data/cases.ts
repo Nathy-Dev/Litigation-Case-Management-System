@@ -1603,6 +1603,14 @@ export function buildCases(now: Date): CaseRecord[] {
       matterOwnerId: seed.ownerId,
       assigneeIds: seed.assignees,
       externalCounselIds: seed.counsel,
+      // Oversight sees a slice of the register rather than all of it: the
+      // Project Coordinator follows every third matter and the audit desk every
+      // fourth, so a read-only sign-in lands on a populated dashboard without
+      // implying stakeholders can see everything.
+      stakeholderIds: [
+        ...(index % 3 === 0 ? ['usr_stakeholder_pc'] : []),
+        ...(index % 4 === 0 ? ['usr_stakeholder_audit'] : []),
+      ],
       teamId: seed.teamId,
       parties: seed.parties.map((party, partyIndex) => ({
         id: `${id}_party_${partyIndex + 1}`,

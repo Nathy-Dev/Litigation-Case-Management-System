@@ -342,13 +342,20 @@ export function CaseFormPage() {
           <Card>
             <CardHeader title="Conduct of the matter" />
             <CardBody className="space-y-4">
-              <Field label="Matter owner" required error={errors.matterOwnerId?.message}>
+              <Field
+                label="Matter owner"
+                required
+                // The designation is shown under the control rather than appended
+                // to the name, which the select is too narrow to display in full.
+                hint={staff.find((item) => item.id === watch('matterOwnerId'))?.title}
+                error={errors.matterOwnerId?.message}
+              >
                 {(props) => (
                   <Select {...register('matterOwnerId')} {...props}>
                     <option value="">Select a lawyer…</option>
                     {staff.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.fullName} — {item.title}
+                        {item.fullName}
                       </option>
                     ))}
                   </Select>

@@ -57,9 +57,18 @@ export function CommandPalette() {
     return new Set(rows.map((row) => row.record.id));
   }, [data, user, can]);
 
+  const access = useMemo(
+    () => ({
+      userId: user?.id ?? null,
+      canSeeUnitTasks: can('task.create'),
+      canSeePeople: can('user.view'),
+    }),
+    [user?.id, can],
+  );
+
   const hits = useMemo(
-    () => (query.trim().length < 2 ? [] : globalSearch(data, query, visibleCaseIds, 5)),
-    [data, query, visibleCaseIds],
+    () => (query.trim().length < 2 ? [] : globalSearch(data, query, visibleCaseIds, access, 5)),
+    [data, query, visibleCaseIds, access],
   );
 
   const grouped = useMemo(() => {

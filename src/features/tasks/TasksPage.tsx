@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useDataStore } from '@/store/dataStore';
 import { useCan, useCurrentUser } from '@/store/authStore';
 import { useVisibleCaseRows } from '@/hooks/useCaseData';
+import { visibleTasks } from '@/lib/selectors/cases';
 import { DAY_MS, useNow } from '@/hooks/useNow';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -39,12 +40,13 @@ export function TasksPage() {
   const [editing, setEditing] = useState<Task | null>(null);
   const [creating, setCreating] = useState(false);
 
-  /** Tasks follow the register: no matter access, no task. Standalone tasks
-   * (not bound to a matter) are always visible to their unit. */
-  const visible = useMemo(() => {
-    const allowed = new Set(rows.map((row) => row.record.id));
-    return tasks.filter((task) => task.caseId === null || allowed.has(task.caseId));
-  }, [tasks, rows]);
+  /** Tasks follow the register: no matter access, no task. A task not bound to
+   * a matter is the Legal Unit's own work, so it takes membership of the Unit
+   * — not merely `task.view` — to see it. */
+  const visible = useMemo(
+    () => visibleTasks(tasks, rows, { userId: user?.id ?? null, canSeeUnitTasks: canCreate }),
+    [tasks, rows, user?.id, canCreate],
+  );
 
   const mine = visible.filter((task) => task.ownerId === user?.id);
   const openTasks = visible.filter(

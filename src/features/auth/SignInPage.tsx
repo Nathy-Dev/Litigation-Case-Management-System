@@ -5,6 +5,7 @@ import { CoatOfArms } from '@/components/brand/CoatOfArms';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Input';
 import { useAuthStore } from '@/store/authStore';
+import { DEMO_MODE } from '@/lib/env';
 import { DemoPersonaPicker } from './DemoPersonaPicker';
 
 export function SignInPage() {
@@ -147,7 +148,11 @@ export function SignInPage() {
 
                 <Field
                   label="Password"
-                  hint="Any password signs you in. Type “wrong” to see the lockout warning."
+                  hint={
+                    DEMO_MODE
+                      ? 'Any password signs you in. Type “wrong” to see the lockout warning.'
+                      : undefined
+                  }
                 >
                   {(props) => (
                     <Input
@@ -178,7 +183,7 @@ export function SignInPage() {
                 </Button>
               </form>
 
-              <DemoPersonaPicker onPicked={() => navigate(from, { replace: true })} />
+              {DEMO_MODE && <DemoPersonaPicker onPicked={() => navigate(from, { replace: true })} />}
             </>
           ) : (
             <>
@@ -200,7 +205,7 @@ export function SignInPage() {
               )}
 
               <form onSubmit={onSubmitMfa} className="mt-5 space-y-4">
-                <Field label="Verification code" hint="Demo code: 123456">
+                <Field label="Verification code" hint={DEMO_MODE ? 'Demo code: 123456' : undefined}>
                   {(props) => (
                     <Input
                       {...props}
