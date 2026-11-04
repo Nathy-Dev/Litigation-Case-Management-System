@@ -1,182 +1,92 @@
+import { useCallback } from 'react';
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import type { Permission, Role, User } from '@/types';
-import { useDataStore } from './dataStore';
+import { authClient } from '@/authClient';
 
-/** Any password is accepted in the demo except the one below, which fails. */
-export const DEMO_PASSWORD_HINT = 'Any password works in this demo';
-const WRONG_PASSWORD = 'wrong';
-const DEMO_MFA_CODE = '123456';
+/**
+ * HYPREP LCMS - the auth seam, backed by Convex.
+ *
+ * This file keeps its path and its exported names so that every import site in
+ * the UI is untouched, but its guts are gone. The prototype resolved identity,
+ * permissions and the audit trail on the client from a demo store; each of
+ * those is now a server decision made in `convex/` and read reactively here.
+ *
+ * The four selectors below are one subscription apiece to `api.auth.me`, which
+ * resolves the caller, their role, their live permission set and their security
+ * compliance from the `permissionMatrix` and `settings` tables on every read.
+ * That is how a runtime edit to a role, a disabled account or a revoked
+ * session reaches every open tab within a round trip.
+ *
+ * `useAuthStore` is kept as a sliver of UI-only state (`signOut`) for the few
+ * call sites that still hold a store reference; there is no credential or
+ * session data here, because Better Auth owns it.
+ */
 
-export type AuthStep = 'credentials' | 'mfa' | 'authenticated';
+type Me = NonNullable<Awaited<ReturnType<typeof useMe>>>;
 
-interface AuthState {
-  currentUserId: string | null;
-  step: AuthStep;
-  pendingUserId: string | null;
-  error: string | null;
-  failedAttempts: Record<string, number>;
-  lastActivityAt: number;
-  signIn: (email: string, password: string) => { ok: boolean; mfaRequired: boolean };
-  verifyMfa: (code: string) => boolean;
-  signInAs: (userId: string) => void;
-  signOut: () => void;
-  clearError: () => void;
-  touch: () => void;
+/** One subscription shared by every selector below. */
+function useMe() {
+  return useQuery(api.auth.me);
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      currentUserId: null,
-      step: 'credentials',
-      pendingUserId: null,
-      error: null,
-      failedAttempts: {},
-      lastActivityAt: Date.now(),
-
-      signIn: (email, password) => {
-        const { users, settings } = useDataStore.getState();
-        const user = users.find(
-          (item) => item.email.toLowerCase() === email.trim().toLowerCase(),
-        );
-
-        if (!user) {
-          set({ error: 'No account matches that email address.' });
-          return { ok: false, mfaRequired: false };
-        }
-
-        if (user.status === 'locked') {
-          set({
-            error: 'This account is locked after repeated failed sign-in attempts. Contact an administrator.',
-          });
-          return { ok: false, mfaRequired: false };
-        }
-
-        if (user.status === 'disabled') {
-          set({ error: 'This account has been disabled.' });
-          return { ok: false, mfaRequired: false };
-        }
-
-        if (password.trim().toLowerCase() === WRONG_PASSWORD) {
-          const attempts = (get().failedAttempts[user.id] ?? 0) + 1;
-          const remaining = settings.maxFailedLoginAttempts - attempts;
-          set({
-            failedAttempts: { ...get().failedAttempts, [user.id]: attempts },
-            error:
-              remaining > 0
-                ? `Incorrect password. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining before the account is locked.`
-                : 'Account locked after 5 failed attempts. Contact an administrator.',
-          });
-
-          if (remaining <= 0) {
-            useDataStore
-              .getState()
-              .upsertUser({ ...user, status: 'locked', failedLoginAttempts: attempts }, user.id);
-          }
-          useDataStore.getState().recordAudit({
-            actorId: user.id,
-            action: 'Failed sign-in attempt',
-            entity: 'Session',
-            entityId: `ses_${user.id}`,
-            entityLabel: `${user.fullName} — invalid password`,
-            outcome: 'failure',
-            metadata: { attempt: attempts, threshold: settings.maxFailedLoginAttempts },
-          });
-          return { ok: false, mfaRequired: false };
-        }
-
-        if (user.mfaEnabled) {
-          set({ step: 'mfa', pendingUserId: user.id, error: null });
-          return { ok: true, mfaRequired: true };
-        }
-
-        completeSignIn(set, user);
-        return { ok: true, mfaRequired: false };
-      },
-
-      verifyMfa: (code) => {
-        const pendingId = get().pendingUserId;
-        const user = useDataStore.getState().users.find((item) => item.id === pendingId);
-        if (!user) return false;
-
-        if (code.trim() !== DEMO_MFA_CODE) {
-          set({ error: `Incorrect verification code. Use ${DEMO_MFA_CODE} for this demo.` });
-          return false;
-        }
-
-        completeSignIn(set, user);
-        return true;
-      },
-
-      /** Presenter shortcut: jump straight into any role without a password. */
-      signInAs: (userId) => {
-        const user = useDataStore.getState().users.find((item) => item.id === userId);
-        if (!user) return;
-        completeSignIn(set, user);
-      },
-
-      signOut: () => {
-        const userId = get().currentUserId;
-        if (userId) {
-          useDataStore.getState().recordAudit({
-            actorId: userId,
-            action: 'Signed out',
-            entity: 'Session',
-            entityId: `ses_${userId}`,
-            entityLabel: 'Session ended',
-          });
-        }
-        set({ currentUserId: null, pendingUserId: null, step: 'credentials', error: null });
-      },
-
-      clearError: () => set({ error: null }),
-      touch: () => set({ lastActivityAt: Date.now() }),
-    }),
-    {
-      name: 'lcms.auth',
-      storage: createJSONStorage(() => sessionStorage),
-      partialize: (state) => ({ currentUserId: state.currentUserId, step: state.step }) as AuthState,
-    },
-  ),
-);
-
-function completeSignIn(set: (partial: Partial<AuthState>) => void, user: User) {
-  set({
-    currentUserId: user.id,
-    pendingUserId: null,
-    step: 'authenticated',
-    error: null,
-    lastActivityAt: Date.now(),
-  });
-  useDataStore.getState().recordAudit({
-    actorId: user.id,
-    action: 'Signed in',
-    entity: 'Session',
-    entityId: `ses_${user.id}`,
-    entityLabel: `${user.fullName} — ${user.mfaEnabled ? 'password + authenticator' : 'password'}`,
-    metadata: { mfa: user.mfaEnabled, role: user.role },
-  });
+/** Whether the resolved `me` is a signed-in, active caller. `null`/`undefined` are false. */
+function isActiveMe(me: Me | null | undefined): me is Extract<Me, { kind: 'active' }> {
+  return me != null && me.kind === 'active';
 }
 
-// ---------------------------------------------------------------------------
-// Selectors
-// ---------------------------------------------------------------------------
-
-export function useCurrentUser(): User | null {
-  const id = useAuthStore((state) => state.currentUserId);
-  return useDataStore((state) => state.users.find((user) => user.id === id) ?? null);
+function toUser(me: Extract<Me, { kind: 'active' }>): User {
+  const u = me.user;
+  return {
+    id: u.id,
+    fullName: u.fullName,
+    email: u.email,
+    // The domain record stores these as strings; the server guarantees the
+    // values are a valid title, so the narrow type is restored at the seam.
+    phone: u.phone ?? '',
+    title: u.title as User['title'],
+    role: u.role as Role,
+    department: u.department,
+    teamId: u.teamId,
+    practisingLicenceNo: u.practisingLicenceNo,
+    firm: u.firm,
+    avatarColor: u.avatarColor,
+    initials: u.initials,
+    status: u.status,
+    mfaEnabled: u.mfaEnabled,
+    // `me` does not ship the lockout counter (nothing the UI does needs it);
+    // the prototype's `User` type carried it, so default it for the contract.
+    failedLoginAttempts: 0,
+    lastLoginAt: u.lastLoginAt,
+    createdAt: u.createdAt,
+  };
 }
 
 /**
- * Permission check. Always reads the live matrix from the data store so the
- * runtime edits made in Admin → Roles take effect immediately.
+ * The signed-in, active caller, or `null`.
+ *
+ * `null` covers both "not signed in" and "still resolving from the server", so
+ * consumers keep working, but the authenticated tree is gated by
+ * `RequireSession`/`RequireAuth` in `app/guards.tsx` so that downstream code
+ * never renders against that `null` and then flashes when it arrives.
+ */
+export function useCurrentUser(): User | null {
+  const me = useMe();
+  if (isActiveMe(me)) return toUser(me);
+  return null;
+}
+
+/**
+ * Permission check. Always reads the live matrix via `api.auth.me`, so runtime
+ * edits made in Admin → Roles take effect on the next round trip.
  */
 export function usePermission(): (permission: Permission) => boolean {
-  const role = useCurrentUser()?.role ?? null;
-  const matrix = useDataStore((state) => state.permissionMatrix);
-  return (permission: Permission) =>
-    Boolean(role && (matrix[role] ?? []).includes(permission));
+  const me = useMe();
+  return useCallback(
+    (permission: Permission) => (isActiveMe(me) ? me.permissions.includes(permission) : false),
+    [me],
+  );
 }
 
 export function useCan(permission: Permission): boolean {
@@ -184,5 +94,60 @@ export function useCan(permission: Permission): boolean {
 }
 
 export function useRole(): Role | null {
-  return useCurrentUser()?.role ?? null;
+  const me = useMe();
+  if (isActiveMe(me)) return me.user.role as Role;
+  return null;
 }
+
+/**
+ * Whether the signed-in caller is behind on a security obligation.
+ *
+ * Reads from `me`, which carries the same verdict the server enforces before
+ * every mutation, so the UI routes for it and the server refuses it in step.
+ */
+export function useCompliance() {
+  const me = useMe();
+  if (!isActiveMe(me)) {
+    return { mustEnrolMfa: false, mustChangePassword: false };
+  }
+  return { mustEnrolMfa: me.mustEnrolMfa, mustChangePassword: me.mustChangePassword };
+}
+
+/** The richer denied/special states `me` can report, so screens can explain them. */
+export type MeKind = Me['kind'];
+
+export type AuthStateKind = MeKind | 'loading' | 'signed-out';
+
+export function useAuthState(): {
+  kind: AuthStateKind;
+  email: string | null;
+  reason: string | null;
+} {
+  const me = useMe();
+  if (me === undefined) return { kind: 'loading', email: null, reason: null };
+  if (me === null) return { kind: 'signed-out', email: null, reason: null };
+  if (me.kind === 'active') return { kind: 'active', email: me.user.email, reason: null };
+  if (me.kind === 'no-account') return { kind: 'no-account', email: me.email, reason: null };
+  if (me.kind === 'blocked') return { kind: 'blocked', email: null, reason: me.status };
+  return { kind: 'session-ended', email: null, reason: me.reason };
+}
+
+// ---------------------------------------------------------------------------
+// UI-only store
+// ---------------------------------------------------------------------------
+
+/**
+ * A deliberately thin store. The only surviving caller of the old raw store is
+ * `signOut`, and the only honest way to end a session is to let Better Auth end
+ * it - the server-side tables, not a local flag, are the source of truth.
+ */
+export const useAuthStore = create<{
+  signOut: () => Promise<void>;
+}>((set) => ({
+  signOut: async () => {
+    await authClient.signOut();
+    set({});
+  },
+}));
+
+export type AuthStep = 'credentials' | 'mfa' | 'authenticated';

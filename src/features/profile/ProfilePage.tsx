@@ -54,7 +54,7 @@ export function ProfilePage() {
   if (!user) return null;
 
   const mine = sessions.filter((session) => session.userId === user.id);
-  const permissions = matrix[user.role];
+  const permissions = matrix[user.role] ?? [];
   const phoneDirty = phone !== user.phone;
 
   const savePhone = () => {

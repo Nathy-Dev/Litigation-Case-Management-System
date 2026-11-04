@@ -1,5 +1,5 @@
 import type { ReportColumn, ReportId } from '@/types';
-import type { Dataset } from '@/mocks/generate';
+import type { Dataset } from './types';
 import type { CaseRow } from './cases';
 import { buildWorkload } from './dashboard';
 import {

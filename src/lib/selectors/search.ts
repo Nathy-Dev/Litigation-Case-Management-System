@@ -1,6 +1,6 @@
-import type { CaseNote, CaseRecord, CaseStatusChange, CourtDate, Task, TimelineEvent } from '@/types';
-import type { Dataset } from '@/mocks/generate';
-import { buildTimeline } from '@/mocks/generate/timeline';
+import type { TimelineEvent } from '@/types';
+import type { Dataset } from './types';
+import { buildTimeline } from '@shared/timeline';
 import { matchesQuery, truncate } from '@/lib/utils';
 import type { TaskAccess } from './cases';
 
@@ -12,12 +12,12 @@ export function selectCaseTimeline(data: Dataset, caseId: string): TimelineEvent
   const only = <T extends { caseId: string }>(rows: T[]) => rows.filter((row) => row.caseId === caseId);
 
   return buildTimeline({
-    cases: [record] as CaseRecord[],
-    statusChanges: only(data.statusChanges) as CaseStatusChange[],
+    cases: [record],
+    statusChanges: only(data.statusChanges),
     documents: only(data.documents),
-    courtDates: only(data.courtDates) as CourtDate[],
-    tasks: data.tasks.filter((task) => task.caseId === caseId) as Task[],
-    notes: only(data.notes) as CaseNote[],
+    courtDates: only(data.courtDates),
+    tasks: data.tasks.filter((task) => task.caseId === caseId),
+    notes: only(data.notes),
   });
 }
 

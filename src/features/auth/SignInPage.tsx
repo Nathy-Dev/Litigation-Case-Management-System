@@ -1,56 +1,63 @@
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AlertTriangle, KeyRound, Lock, LogIn, Mail, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Info, ShieldCheck, KeyRound } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 import { CoatOfArms } from '@/components/brand/CoatOfArms';
-import { Button } from '@/components/ui/Button';
-import { Field, Input } from '@/components/ui/Input';
-import { useAuthStore } from '@/store/authStore';
-import { DEMO_MODE } from '@/lib/env';
-import { DemoPersonaPicker } from './DemoPersonaPicker';
+import { useAuthState } from '@/store/authStore';
+import { CredentialsForm } from './CredentialsForm';
+import { MfaForm } from './MfaForm';
 
+/**
+ * HYPREP LCMS - sign-in.
+ *
+ * Talks to Better Auth (running inside this Convex deployment) for real:
+ * credentials first, then a six-digit authenticator code if the account has
+ * two-factor switched on. Session state is owned by the server - `me` re-runs
+ * as soon as sign-in completes and this screen redirects.
+ */
 export function SignInPage() {
-  const step = useAuthStore((state) => state.step);
-  const error = useAuthStore((state) => state.error);
-  const signIn = useAuthStore((state) => state.signIn);
-  const verifyMfa = useAuthStore((state) => state.verifyMfa);
-  const clearError = useAuthStore((state) => state.clearError);
+  const { kind, email, reason } = useAuthState();
+  const [step, setStep] = useState<'credentials' | 'mfa'>('credentials');
+
+  // SSO is runtime-gated on `settings.ssoEnabled` (Admin -> System).
+  //
+  // Deliberately `api.reference.ssoGate`, not `api.reference.bundle`: `bundle`
+  // is an authed query, and a visitor on this page is not signed in yet, so
+  // asking for `bundle` makes the server throw "Not signed in." and crash the
+  // screen. `ssoGate` is a plain query that exposes only this flag.
+  const ssoEnabled = useQuery(api.reference.ssoGate) ?? false;
 
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? '/';
+  const ssoUrl = `${import.meta.env.VITE_CONVEX_SITE_URL ?? ''}/api/auth/sign-in/oidc`;
 
-  const [email, setEmail] = useState('c.okonkwo@hyprep.gov.ng');
-  const [password, setPassword] = useState('');
-  const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
+  if (kind === 'active') return <Navigate to={from} replace />;
 
-  if (step === 'authenticated') return <Navigate to={from} replace />;
-
-  const onSubmitCredentials = (event: React.FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    const result = signIn(email, password);
-    setBusy(false);
-    if (result.ok && !result.mfaRequired) navigate(from, { replace: true });
-  };
-
-  const onSubmitMfa = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (verifyMfa(code)) navigate(from, { replace: true });
-  };
+  const status =
+    kind === 'no-account'
+      ? {
+          icon: Info,
+          title: 'No staff account',
+          body: `${email ?? 'This address'} is not on the Legal Unit register. Ask an administrator to invite you.`,
+        }
+      : kind === 'blocked'
+        ? {
+            icon: AlertTriangle,
+            title: 'Account unavailable',
+            body: `This account is ${reason}. Contact an administrator if you believe this is wrong.`,
+          }
+        : kind === 'session-ended'
+          ? { icon: Info, title: 'Session ended', body: reason ?? 'Your session is no longer active. Sign in again to continue.' }
+          : null;
 
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       {/* Brand panel */}
       <section className="relative hidden flex-col justify-between overflow-hidden bg-brand-800 p-10 text-white lg:flex">
-        <div
-          aria-hidden
-          className="absolute -top-24 -right-24 size-96 rounded-full bg-brand-600/40 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="absolute -bottom-32 -left-20 size-96 rounded-full bg-brand-950/40 blur-3xl"
-        />
+        <div aria-hidden className="absolute -top-24 -right-24 size-96 rounded-full bg-brand-600/40 blur-3xl" />
+        <div aria-hidden className="absolute -bottom-32 -left-20 size-96 rounded-full bg-brand-950/40 blur-3xl" />
 
         <div className="relative flex items-center gap-3">
           <span className="grid size-12 place-items-center overflow-hidden rounded-xl bg-white p-1 ring-1 ring-white/30">
@@ -74,169 +81,52 @@ export function SignInPage() {
             One register for every matter the Legal Unit handles — pleadings, hearing diary,
             court outcomes and the audit trail behind them.
           </p>
-
-          <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5">
-            {[
-              ['Matters tracked', 'Filing to judgment, with full status history'],
-              ['Hearing diary', 'Reminders at one week, three days and 24 hours'],
-              ['Document vault', 'Versioned, watermarked, searchable by OCR text'],
-              ['Accountability', 'Every action stamped with user, time and IP'],
-            ].map(([term, detail]) => (
-              <div key={term}>
-                <dt className="text-[13px] font-semibold text-white">{term}</dt>
-                <dd className="mt-0.5 text-[12px] leading-snug text-brand-100/85">{detail}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
-
-        <p className="relative text-[11px] text-brand-100/70">
-          Prototype build for stakeholder review · Version 1.0 · Data shown is fictitious
-        </p>
       </section>
 
       {/* Form panel */}
-      <section className="flex flex-col justify-center bg-white px-5 py-10 sm:px-10">
-        <div className="mx-auto w-full max-w-sm">
-          <div className="mb-7 flex items-center gap-3 lg:hidden">
-            <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-1 ring-1 ring-ink-200/70">
-              <CoatOfArms size={26} decorative />
-            </span>
-            <div>
-              <p className="font-serif text-[16px] leading-tight font-semibold text-ink-900">
-                HYPREP Legal Unit
-              </p>
-              <p className="text-[11px] tracking-wide text-ink-500 uppercase">LCMS</p>
+      <section className="grid place-items-center bg-white px-6 py-10">
+        <div className="w-full max-w-sm">
+          {status && (
+            <div className="mb-6 flex gap-3 rounded-card border border-amber-200 bg-amber-50/70 p-4">
+              <status.icon className="size-5 shrink-0 text-amber-700" aria-hidden />
+              <div>
+                <p className="text-[13px] font-semibold text-amber-900">{status.title}</p>
+                <p className="mt-0.5 text-[12px] leading-snug text-amber-800/90">{status.body}</p>
+              </div>
             </div>
-          </div>
+          )}
+
+          <span className="grid size-11 place-items-center rounded-full bg-brand-50 text-brand-700">
+            <ShieldCheck className="size-5" aria-hidden />
+          </span>
+          <h2 className="mt-4 font-serif text-[24px] font-semibold text-ink-900">Sign in</h2>
+          <p className="mt-1 text-[13px] leading-relaxed text-ink-500">
+            Use your Legal Unit account to access the case register.
+          </p>
 
           {step === 'credentials' ? (
             <>
-              <h2 className="font-serif text-[24px] font-semibold text-ink-900">Sign in</h2>
-              <p className="mt-1 text-[13px] text-ink-500">
-                Use your official HYPREP address. Access is logged.
-              </p>
-
-              {error && (
-                <div
-                  role="alert"
-                  className="mt-5 flex items-start gap-2.5 rounded-lg bg-danger-50 p-3 ring-1 ring-danger-200"
-                >
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-danger-600" aria-hidden />
-                  <p className="text-[13px] leading-snug text-danger-800">{error}</p>
-                </div>
+              {ssoEnabled && ssoUrl && (
+                <>
+                  <a
+                    href={ssoUrl}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-card border border-ink-200 bg-white px-4 py-2.5 text-[13px] font-semibold text-ink-800 shadow-xs transition-colors hover:border-brand-300 hover:text-brand-700"
+                  >
+                    <KeyRound className="size-4" aria-hidden />
+                    Sign in with single sign-on
+                  </a>
+                  <div className="my-4 flex items-center gap-3 text-[11px] font-medium tracking-wide text-ink-400 uppercase">
+                    <span className="h-px flex-1 bg-ink-100" aria-hidden />
+                    or with a password
+                    <span className="h-px flex-1 bg-ink-100" aria-hidden />
+                  </div>
+                </>
               )}
-
-              <form onSubmit={onSubmitCredentials} className="mt-5 space-y-4">
-                <Field label="Email address">
-                  {(props) => (
-                    <Input
-                      {...props}
-                      type="email"
-                      autoComplete="username"
-                      value={email}
-                      onChange={(event) => {
-                        setEmail(event.target.value);
-                        clearError();
-                      }}
-                      leading={<Mail className="size-4" aria-hidden />}
-                      placeholder="name@hyprep.gov.ng"
-                      required
-                    />
-                  )}
-                </Field>
-
-                <Field
-                  label="Password"
-                  hint={
-                    DEMO_MODE
-                      ? 'Any password signs you in. Type “wrong” to see the lockout warning.'
-                      : undefined
-                  }
-                >
-                  {(props) => (
-                    <Input
-                      {...props}
-                      type="password"
-                      autoComplete="current-password"
-                      value={password}
-                      onChange={(event) => {
-                        setPassword(event.target.value);
-                        clearError();
-                      }}
-                      leading={<Lock className="size-4" aria-hidden />}
-                      placeholder="••••••••"
-                      required
-                    />
-                  )}
-                </Field>
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  loading={busy}
-                  icon={<LogIn className="size-4" aria-hidden />}
-                >
-                  Sign in
-                </Button>
-              </form>
-
-              {DEMO_MODE && <DemoPersonaPicker onPicked={() => navigate(from, { replace: true })} />}
+              <CredentialsForm onMfa={() => setStep('mfa')} />
             </>
           ) : (
-            <>
-              <span className="grid size-11 place-items-center rounded-full bg-brand-50 text-brand-700">
-                <ShieldCheck className="size-5" aria-hidden />
-              </span>
-              <h2 className="mt-4 font-serif text-[24px] font-semibold text-ink-900">
-                Two-factor verification
-              </h2>
-              <p className="mt-1 text-[13px] leading-relaxed text-ink-500">
-                Enter the six-digit code from your authenticator app. This account has
-                multi-factor authentication switched on.
-              </p>
-
-              {error && (
-                <p role="alert" className="mt-4 text-[13px] text-danger-700">
-                  {error}
-                </p>
-              )}
-
-              <form onSubmit={onSubmitMfa} className="mt-5 space-y-4">
-                <Field label="Verification code" hint={DEMO_MODE ? 'Demo code: 123456' : undefined}>
-                  {(props) => (
-                    <Input
-                      {...props}
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={code}
-                      onChange={(event) => {
-                        setCode(event.target.value.replace(/\D/g, ''));
-                        clearError();
-                      }}
-                      leading={<KeyRound className="size-4" aria-hidden />}
-                      placeholder="000000"
-                      className="tnum tracking-[0.35em]"
-                      required
-                    />
-                  )}
-                </Field>
-
-                <Button type="submit" variant="primary" size="lg" fullWidth>
-                  Verify and continue
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  fullWidth
-                  onClick={() => useAuthStore.setState({ step: 'credentials', pendingUserId: null })}
-                >
-                  Use a different account
-                </Button>
-              </form>
-            </>
+            <MfaForm onBack={() => setStep('credentials')} onDone={() => navigate(from, { replace: true })} />
           )}
         </div>
       </section>

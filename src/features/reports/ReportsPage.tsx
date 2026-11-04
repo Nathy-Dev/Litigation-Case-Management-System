@@ -13,7 +13,6 @@ import { notify } from '@/store/uiStore';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Field, Select } from '@/components/ui/Input';
 import { ReportTable } from './ReportTable';
 
@@ -196,9 +195,6 @@ export function ReportsPage() {
                     )}
                   </Field>
                 </div>
-                <Badge tone="neutral" size="sm">
-                  {definition.requirement}
-                </Badge>
               </div>
 
               <p className="flex items-center gap-1.5 text-[12px] text-ink-600">

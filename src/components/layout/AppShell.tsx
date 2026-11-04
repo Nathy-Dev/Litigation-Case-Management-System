@@ -7,6 +7,8 @@ import { SidebarContent } from './Sidebar';
 import { Topbar } from './Topbar';
 import { CommandPalette } from './CommandPalette';
 import { Toaster } from '@/components/ui/Toaster';
+import { useSessionKeepAlive } from '@/hooks/useSessionKeepAlive';
+import { DataProvider } from '@/store/dataStore';
 
 /**
  * Application chrome: a fixed green rail, a sticky topbar, and the routed page.
@@ -20,6 +22,9 @@ export function AppShell() {
   const density = useUiStore((state) => state.density);
   const location = useLocation();
 
+  // Keep the server's idle clock honest while the app is open and in focus.
+  useSessionKeepAlive();
+
   // Close the sheet and return to the top of the document on navigation.
   useEffect(() => {
     setMobileNav(false);
@@ -28,6 +33,9 @@ export function AppShell() {
 
   return (
     <div className="min-h-dvh bg-ink-50">
+      {/* Feeds the Convex-backed register collections into the data store once,
+          so the ~40 components that read `useDataStore` slices get live data. */}
+      <DataProvider />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:rounded-lg focus:bg-brand-700 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"

@@ -389,17 +389,13 @@ export type TimelineEventType =
   | 'note.added'
   | 'counsel.assigned';
 
-export interface TimelineEvent {
-  id: string;
-  caseId: string;
-  type: TimelineEventType;
-  summary: string;
-  detail: string;
-  actorId: string;
-  at: string;
-  /** Optional pointer to the related entity for deep-linking. */
-  refId: string | null;
-}
+/**
+ * Timeline events are produced server-side and carry structured operands rather
+ * than composed prose, so the type is declared alongside the builder in
+ * `convex/shared/timeline.ts` and re-exported here for the components that read
+ * it. `src/lib/timelineText.ts` turns one into the sentence a user sees.
+ */
+export type { TimelineEvent } from '@shared/timeline';
 
 export type NotificationChannel = 'in_app' | 'email' | 'sms';
 

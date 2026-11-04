@@ -10,7 +10,7 @@ import type {
   Task,
   User,
 } from '@/types';
-import type { Dataset } from '@/mocks/generate';
+import type { Dataset } from './types';
 import { ageInDays, daysUntil } from '@/lib/format';
 import { matchesQuery } from '@/lib/utils';
 

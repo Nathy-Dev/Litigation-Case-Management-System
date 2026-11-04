@@ -1,0 +1,38 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90mC:/Users/Nathy.Dev/Desktop/Web projects/HYPREP/Litigation Case Management System[39m
+
+ [31m❯[39m convex/lib/access.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m convex/lib/functions.test.ts [2m([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m convex/lib/access.test.ts[2m [ convex/lib/access.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m convex/lib/access.test.ts:[2m244:21[22m[39m
+    [90m242|[39m [35mconst[39m [33mSEEDS[39m [33m=[39m [[34m1[39m[33m,[39m [34m7[39m[33m,[39m [34m99[39m[33m,[39m [34m4242[39m[33m,[39m [34m20260824[39m][33m;[39m
+    [90m243|[39m
+    [90m244|[39m describe.each(SEEDS)('access rule over generated corpus (seed %i)', (s…
+    [90m   |[39m                     [31m^[39m
+    [90m245|[39m   test('the index-driven answer matches the array scan for every user'…
+    [90m246|[39m     [35mconst[39m t [33m=[39m [34mconvexTest[39m(schema)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m convex/lib/functions.test.ts[2m [ convex/lib/functions.test.ts ][22m
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'config')[39m
+[36m [2m❯[22m convex/lib/functions.test.ts:[2m294:1[22m[39m
+    [90m292|[39m // -------------------------------------------------------------------…
+    [90m293|[39m
+    [90m294|[39m [34mdescribe[39m([32m'the audit requirement'[39m[33m,[39m () [33m=>[39m {
+    [90m   |[39m [31m^[39m
+    [90m295|[39m   test('an audited mutation commits, and the row describes the act', a…
+    [90m296|[39m     [35mconst[39m { t[33m,[39m [35mas[39m[33m,[39m userId } [33m=[39m [35mawait[39m [34msetup[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[90m (2)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 16:05:07
+[2m   Duration [22m 22.95s[2m (transform 3.18s, setup 0ms, import 0ms, tests 0ms, environment 21.66s)[22m
+

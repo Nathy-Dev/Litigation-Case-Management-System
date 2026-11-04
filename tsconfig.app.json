@@ -18,7 +18,8 @@
 
     /* Paths — resolved relative to this file (baseUrl is deprecated in TS 6) */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["./convex/shared/*"]
     },
 
     /* Linting */

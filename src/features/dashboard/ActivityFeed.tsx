@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType } from '@/types';
 import { formatRelative } from '@/lib/format';
+import { describeEvent } from '@/lib/timelineText';
 import { useDataStore } from '@/store/dataStore';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -70,6 +71,7 @@ export function ActivityFeed({
           const actor = users.find((item) => item.id === event.actorId);
           const matter = cases.find((item) => item.id === event.caseId);
           const Icon = EVENT_ICON[event.type] ?? Activity;
+          const { summary, detail } = describeEvent(event);
 
           return (
             <li key={event.id} className="relative flex gap-3 py-2.5">
@@ -79,10 +81,10 @@ export function ActivityFeed({
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] leading-snug text-ink-800">
                   <span className="font-medium text-ink-900">{actor?.fullName ?? 'System'}</span>{' '}
-                  {event.summary}
+                  {summary}
                 </p>
-                {event.detail && (
-                  <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-ink-500">{event.detail}</p>
+                {detail && (
+                  <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-ink-500">{detail}</p>
                 )}
                 <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-ink-400">
                   <span>{formatRelative(event.at)}</span>

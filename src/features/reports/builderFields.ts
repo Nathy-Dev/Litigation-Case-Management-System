@@ -1,5 +1,5 @@
 import type { ReportColumn } from '@/types';
-import type { Dataset } from '@/mocks/generate';
+import type { Dataset } from '@/lib/selectors/types';
 import type { CaseRow } from '@/lib/selectors/cases';
 import type { ReportCell, ReportRow } from '@/lib/selectors/reports';
 import {

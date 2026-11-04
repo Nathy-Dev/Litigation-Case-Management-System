@@ -75,7 +75,7 @@ export function RecordOutcomeDialog({
     recordOutcome(courtDate.id, outcome, notes.trim(), actorId);
 
     if (adjourning && scheduleNext && nextDate) {
-      const next = createCourtDate(
+      void createCourtDate(
         {
           caseId: courtDate.caseId,
           startsAt: new Date(`${nextDate}T${nextTime || '09:00'}:00`).toISOString(),
@@ -89,12 +89,13 @@ export function RecordOutcomeDialog({
           reminderOffsetsHours: courtDate.reminderOffsetsHours,
         },
         actorId,
-      );
-      updateCourtDate(courtDate.id, { adjournedToDateId: next.id }, actorId);
-      notify({
-        variant: 'success',
-        title: 'Outcome recorded',
-        description: `Adjourned to ${format(new Date(next.startsAt), 'EEE d MMM yyyy')} for ${nextPurpose.toLowerCase()}.`,
+      ).then((next) => {
+        updateCourtDate(courtDate.id, { adjournedToDateId: next.id }, actorId);
+        notify({
+          variant: 'success',
+          title: 'Outcome recorded',
+          description: `Adjourned to ${format(new Date(`${nextDate}T${nextTime || '09:00'}:00`), 'EEE d MMM yyyy')} for ${nextPurpose.toLowerCase()}.`,
+        });
       });
     } else {
       notify({

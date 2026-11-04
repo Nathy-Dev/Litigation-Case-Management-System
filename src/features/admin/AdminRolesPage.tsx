@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Check, RotateCcw, ShieldCheck } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 import type { Permission, Role } from '@/types';
 import { ROLES } from '@/types';
 import {
@@ -32,6 +34,15 @@ export function AdminRolesPage() {
   const actor = useCurrentUser();
   const canManage = useCan('role.manage');
 
+  const roleMatrixQuery = useQuery(api.reference.roleMatrix);
+
+  useEffect(() => {
+    if (!roleMatrixQuery) return;
+    const next: Record<string, Permission[]> = {};
+    roleMatrixQuery.forEach((row) => { next[row.role] = row.permissions as Permission[]; });
+    useDataStore.setState({ permissionMatrix: next as typeof matrix });
+  }, [roleMatrixQuery]);
+
   const [resetting, setResetting] = useState<Role | null>(null);
 
   const headcount = useMemo(() => {
@@ -43,7 +54,7 @@ export function AdminRolesPage() {
   }, [users]);
 
   const toggle = (role: Role, permission: Permission) => {
-    const current = matrix[role];
+    const current = matrix[role] ?? [];
     const next = current.includes(permission)
       ? current.filter((item) => item !== permission)
       : [...current, permission];
@@ -51,7 +62,7 @@ export function AdminRolesPage() {
   };
 
   const setGroup = (role: Role, permissions: Permission[], grant: boolean) => {
-    const current = new Set(matrix[role]);
+    const current = new Set(matrix[role] ?? []);
     permissions.forEach((permission) => (grant ? current.add(permission) : current.delete(permission)));
     setRolePermissions(role, [...current], actor?.id ?? 'system');
   };
@@ -66,11 +77,14 @@ export function AdminRolesPage() {
     setResetting(null);
   };
 
-  const drifted = ROLES.filter(
-    (role) =>
-      matrix[role].length !== DEFAULT_PERMISSION_MATRIX[role].length ||
-      matrix[role].some((permission) => !DEFAULT_PERMISSION_MATRIX[role].includes(permission)),
-  );
+  const drifted = ROLES.filter((role) => {
+    const perms = matrix[role];
+    if (!perms) return false;
+    return (
+      perms.length !== DEFAULT_PERMISSION_MATRIX[role].length ||
+      perms.some((permission) => !DEFAULT_PERMISSION_MATRIX[role].includes(permission))
+    );
+  });
 
   return (
     <div className="space-y-4">
@@ -106,7 +120,7 @@ export function AdminRolesPage() {
                 )}
               </div>
               <p className="mt-2 text-[11px] text-ink-600">
-                <span className="font-semibold text-ink-800">{matrix[role].length}</span> permissions ·{' '}
+                <span className="font-semibold text-ink-800">{(matrix[role] ?? []).length}</span> permissions ·{' '}
                 <span className="font-semibold text-ink-800">{headcount[role]}</span> account
                 {headcount[role] === 1 ? '' : 's'}
               </p>
@@ -117,7 +131,7 @@ export function AdminRolesPage() {
 
       {PERMISSION_GROUPS.map((group, index) => {
         const covered = ROLES.filter((role) =>
-          group.permissions.some((permission) => matrix[role].includes(permission)),
+          group.permissions.some((permission) => (matrix[role] ?? []).includes(permission)),
         ).length;
 
         return (
@@ -183,7 +197,7 @@ export function AdminRolesPage() {
                       <code className="text-[10px] text-ink-400">{permission}</code>
                     </th>
                     {ROLES.map((role) => {
-                      const granted = matrix[role].includes(permission);
+                      const granted = (matrix[role] ?? []).includes(permission);
                       const isDefault = DEFAULT_PERMISSION_MATRIX[role].includes(permission);
                       return (
                         <td key={role} className="px-2 py-2 text-center">

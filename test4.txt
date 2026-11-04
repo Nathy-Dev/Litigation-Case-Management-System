@@ -1,0 +1,268 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mc:/Users/Nathy.Dev/Desktop/Web projects/HYPREP/Litigation Case Management System[39m
+
+ [32m✓[39m convex/documents.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 3088[2mms[22m[39m
+   [33m[2m✓[22m[39m anonymous callers cannot generate upload URLs [33m 3049[2mms[22m[39m
+ [32m✓[39m convex/lib/functions.test.ts [2m([22m[2m27 tests[22m[2m)[22m[33m 582[2mms[22m[39m
+ [32m✓[39m convex/lib/access.test.ts [2m([22m[2m40 tests[22m[2m)[22m[33m 15739[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 1)[2m > [22mthe index-driven answer matches the array scan for every user [33m 1124[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 1)[2m > [22mnon-confidential matters resolve identically to the rule this replaces [33m 727[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 1)[2m > [22mconfidential matters are only ever withheld, never newly exposed [33m 341[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 1)[2m > [22mmembership rows only ever grant access the arrays already imply [33m 416[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 1)[2m > [22mattachment to a matter always grants access, whatever the flags [33m 308[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 1)[2m > [22mevery array membership is reachable through the index [33m 369[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 7)[2m > [22mthe index-driven answer matches the array scan for every user [33m 948[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 7)[2m > [22mnon-confidential matters resolve identically to the rule this replaces [33m 315[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 7)[2m > [22mconfidential matters are only ever withheld, never newly exposed [33m 440[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 7)[2m > [22mmembership rows only ever grant access the arrays already imply [33m 519[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 7)[2m > [22mattachment to a matter always grants access, whatever the flags [33m 503[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 7)[2m > [22mevery array membership is reachable through the index [33m 494[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 99)[2m > [22mthe index-driven answer matches the array scan for every user [33m 1227[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 99)[2m > [22mnon-confidential matters resolve identically to the rule this replaces [33m 439[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 99)[2m > [22mconfidential matters are only ever withheld, never newly exposed [33m 435[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 99)[2m > [22mmembership rows only ever grant access the arrays already imply [33m 395[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 99)[2m > [22mattachment to a matter always grants access, whatever the flags [33m 358[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 99)[2m > [22mevery array membership is reachable through the index [33m 325[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 4242)[2m > [22mthe index-driven answer matches the array scan for every user [33m 1103[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 4242)[2m > [22mnon-confidential matters resolve identically to the rule this replaces [33m 441[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 4242)[2m > [22mconfidential matters are only ever withheld, never newly exposed [33m 536[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 4242)[2m > [22mmembership rows only ever grant access the arrays already imply [33m 413[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 4242)[2m > [22mattachment to a matter always grants access, whatever the flags [33m 341[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 4242)[2m > [22mevery array membership is reachable through the index [33m 421[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 20260824)[2m > [22mthe index-driven answer matches the array scan for every user [33m 910[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 20260824)[2m > [22mnon-confidential matters resolve identically to the rule this replaces [33m 352[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 20260824)[2m > [22mconfidential matters are only ever withheld, never newly exposed [33m 362[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 20260824)[2m > [22mmembership rows only ever grant access the arrays already imply [33m 473[2mms[22m[39m
+   [33m[2m✓[22m[39m access rule over generated corpus (seed 20260824)[2m > [22mevery array membership is reachable through the index [33m 380[2mms[22m[39m
+ [31m❯[39m convex/journeys.test.ts [2m([22m[2m69 tests[22m[2m | [22m[31m8 failed[39m[2m)[22m[33m 35721[2mms[22m[39m
+   [33m[2m✓[22m[39m journey: standing up the deployment[2m > [22mthe registrar configures the reference tables and everyone can read them [33m 4982[2mms[22m[39m
+[31m   [31m×[31m journey: standing up the deployment[2m > [22man upsert with an id amends in place rather than duplicating[39m[33m 328[2mms[22m[39m
+[31m     → Mutation for Configuration/Saved tag recorded no audit row. Call ctx.audit(...), or declare `audit: { skip: "<reason>" }`.[39m
+   [33m[2m✓[22m[39m journey: standing up the deployment[2m > [22mthe bundle reports the caller their own permissions, per role [33m 419[2mms[22m[39m
+   [32m✓[39m journey: standing up the deployment[2m > [22msystem settings are the director’s alone; configuration is the registrar’s too[32m 259[2mms[22m[39m
+   [33m[2m✓[22m[39m journey: standing up the deployment[2m > [22mevery configuration act lands in the audit trail as Configuration [33m 1052[2mms[22m[39m
+   [33m[2m✓[22m[39m journey: filing a matter[2m > [22mthe matter number is allocated from the year counter, in sequence [33m 3462[2mms[22m[39m
+   [32m✓[39m journey: filing a matter[2m > [22mthe caseMembers projection is written from the four attachment lists[32m 183[2mms[22m[39m
+   [32m✓[39m journey: filing a matter[2m > [22mthe detail view carries the matter, its rollups and a created timeline entry[32m 140[2mms[22m[39m
+   [32m✓[39m journey: filing a matter[2m > [22man amendment rewrites the projection when the assignee changes[32m 132[2mms[22m[39m
+   [32m✓[39m journey: filing a matter[2m > [22mthe register paginates, filters and sorts for a register-wide role[32m 226[2mms[22m[39m
+   [32m✓[39m journey: filing a matter[2m > [22marchiving hides a matter from the register until it is asked for[32m 190[2mms[22m[39m
+   [32m✓[39m journey: filing a matter[2m > [22mdeleting a matter takes its access projection with it[32m 241[2mms[22m[39m
+   [33m[2m✓[22m[39m journey: the court diary[2m > [22ma scheduled sitting becomes the next hearing on the matter [33m 892[2mms[22m[39m
+   [32m✓[39m journey: the court diary[2m > [22mthe diary window filters by date[32m 109[2mms[22m[39m
+   [32m✓[39m journey: the court diary[2m > [22mrescheduling moves the sitting and discards the reminders already served[32m 183[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22man adjournment carries the matter to Adjourned and records why[32m 181[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22m{ outcome: 'Heard', expected: 'Heard' } leaves the matter at %s[32m 229[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22m{ outcome: 'Part-Heard', expected: 'Pending' } leaves the matter at %s[32m 205[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22m{ outcome: 'Judgment Delivered', expected: 'Judgment Delivered' } leaves the matter at %s[32m 202[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22m{ outcome: 'Ruling Delivered', expected: 'Pending' } leaves the matter at %s[32m 214[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22m{ outcome: 'Settled', expected: 'Concluded' } leaves the matter at %s[32m 189[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22m{ outcome: 'Struck Out', expected: 'Concluded' } leaves the matter at %s[32m 197[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22m{ outcome: 'Judgment Reserved', expected: 'Filed' } leaves the matter at %s[32m 164[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22m{ outcome: 'Not Sat', expected: 'Filed' } leaves the matter at %s[32m 229[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22ma case officer may diarise a sitting but not report its outcome[32m 254[2mms[22m[39m
+   [32m✓[39m journey: outcomes carry the matter[2m > [22ma status change written by hand is recorded with its stated reason[32m 249[2mms[22m[39m
+   [33m[2m✓[22m[39m journey: the document file[2m > [22ma filed document lands as version 1, queued for OCR, and bumps the rollup [33m 314[2mms[22m[39m
+   [32m✓[39m journey: the document file[2m > [22ma revised filing becomes version 2 without losing version 1[32m 185[2mms[22m[39m
+   [32m✓[39m journey: the document file[2m > [22mchecking a document out names the holder, and checking it back in clears them[32m 164[2mms[22m[39m
+   [32m✓[39m journey: who may touch the file[2m > [22ma case officer may read the file but not manage its versions[32m 169[2mms[22m[39m
+   [32m✓[39m journey: who may touch the file[2m > [22mwithdrawing a document needs the delete right and returns the rollup to zero[32m 226[2mms[22m[39m
+   [33m[2m✓[22m[39m journey: the task board[2m > [22ma new task opens Not Started whatever the caller asks for [33m 1289[2mms[22m[39m
+   [32m✓[39m journey: the task board[2m > [22mcompleting a task stamps completedAt and reopening it clears the stamp[32m 170[2mms[22m[39m
+   [32m✓[39m journey: the task board[2m > [22mreassigning a task moves it on the board without touching its history[32m 168[2mms[22m[39m
+   [32m✓[39m journey: the task board[2m > [22mticking a checklist item flips that item alone and leaves the task open[32m 174[2mms[22m[39m
+   [32m✓[39m journey: the Unit’s own work[2m > [22ma standalone task is the Unit’s and its owner’s, and nobody else’s[32m 161[2mms[22m[39m
+   [32m✓[39m journey: the Unit’s own work[2m > [22ma case officer may tick a task but not reassign one[32m 158[2mms[22m[39m
+   [32m✓[39m journey: the Unit’s own work[2m > [22mthe board filters by matter, status, priority and due date[32m 234[2mms[22m[39m
+   [33m[2m✓[22m[39m journey: notes and the internal-only line[2m > [22mthe Legal Unit sees every note on the matter [33m 513[2mms[22m[39m
+   [32m✓[39m journey: notes and the internal-only line[2m > [22ma read-only stakeholder has no note surface of their own[32m 159[2mms[22m[39m
+[31m   [31m×[31m journey: notes and the internal-only line[2m > [22mexternal counsel does not see the internal notes on their own matter[39m[32m 178[2mms[22m[39m
+[31m     → expected [ …(2) ] to not include '000000000000000000000010030notes'[39m
+[31m   [31m×[31m journey: notes and the internal-only line[2m > [22mthe detail bundle withholds internal notes from external counsel[39m[32m 176[2mms[22m[39m
+[31m     → expected [ …(2) ] to not include '000000000000000000000010030notes'[39m
+   [32m✓[39m journey: notes and the internal-only line[2m > [22mthe detail bundle withholds internal notes from a read-only stakeholder[32m 175[2mms[22m[39m
+   [32m✓[39m journey: a confidential matter[2m > [22mthe register withholds it from a role without the capability[32m 168[2mms[22m[39m
+   [32m✓[39m journey: a confidential matter[2m > [22mbut the officer working the file keeps their access to it[32m 170[2mms[22m[39m
+   [32m✓[39m journey: a confidential matter[2m > [22mthe confidentialOnly filter reports only what the caller may see[32m 195[2mms[22m[39m
+   [32m✓[39m journey: a matter locked to named users[2m > [22man allow-list excludes even the system owner[32m 206[2mms[22m[39m
+   [32m✓[39m journey: a matter locked to named users[2m > [22mbeing named on the allow-list is not itself a grant of access[32m 213[2mms[22m[39m
+   [32m✓[39m journey: a matter locked to named users[2m > [22mthe lock reaches the child collections too[32m 192[2mms[22m[39m
+   [32m✓[39m journey: roles decide what a caller may do[2m > [22ma read-only stakeholder may open their matter and change nothing[32m 120[2mms[22m[39m
+   [32m✓[39m journey: roles decide what a caller may do[2m > [22ma case officer files and edits matters but does not move their status[32m 180[2mms[22m[39m
+   [33m[2m✓[22m[39m journey: roles decide what a caller may do[2m > [22mexternal counsel is confined to their own brief [33m 1362[2mms[22m[39m
+[31m   [31m×[31m journey: roles decide what a caller may do[2m > [22mthe register is the caseload for a role scoped to assigned matters[39m[32m 172[2mms[22m[39m
+[31m     → Your role does not permit this action (case.view.all).[39m
+   [33m[2m✓[22m[39m journey: editing the matrix takes effect at once[2m > [22mrevoking a permission stops the very next call, and resetting restores it [33m 399[2mms[22m[39m
+   [32m✓[39m journey: editing the matrix takes effect at once[2m > [22monly a role manager may edit the matrix[32m 208[2mms[22m[39m
+   [32m✓[39m journey: editing the matrix takes effect at once[2m > [22ma role granted a permission it does not normally hold may use it at once[32m 238[2mms[22m[39m
+[31m   [31m×[31m journey: an outstanding MFA enrolment[2m > [22mstops the writes and leaves the reads alone[39m[32m 176[2mms[22m[39m
+[31m     → promise resolved "{ id: '000000000000000000000010022ca…' }" instead of rejecting[39m
+[31m   [31m×[31m journey: an outstanding MFA enrolment[2m > [22menrolling discharges it and the next write goes through[39m[32m 170[2mms[22m[39m
+[31m     → promise resolved "{ …(2) }" instead of rejecting[39m
+[31m   [31m×[31m journey: an outstanding MFA enrolment[2m > [22man individual requirement binds one account, whatever the role rule says[39m[33m 1819[2mms[22m[39m
+[31m     → promise resolved "{ …(2) }" instead of rejecting[39m
+   [32m✓[39m journey: an expired password[2m > [22mstops the writes until it is changed[32m 160[2mms[22m[39m
+   [32m✓[39m journey: an expired password[2m > [22man account that has never set a password has nothing to expire[32m 159[2mms[22m[39m
+   [32m✓[39m journey: the trail records the work[2m > [22ma full working day reads back newest first with every act in it[32m 177[2mms[22m[39m
+   [32m✓[39m journey: the trail records the work[2m > [22mthe trail filters by entity, by actor and by action[32m 145[2mms[22m[39m
+   [32m✓[39m journey: the trail records the work[2m > [22mthe page size is bounded however large a page is asked for[32m 178[2mms[22m[39m
+   [32m✓[39m journey: the trail records the work[2m > [22ma read worth recording is recorded, through the closed action enum[32m 154[2mms[22m[39m
+   [32m✓[39m journey: the trail records the work[2m > [22mthe trail is closed to a caller without the audit right[32m 154[2mms[22m[39m
+[31m   [31m×[31m journey: the dashboard counts the visible register[2m > [22mthe figures add up over the whole register[39m[33m 8405[2mms[22m[39m
+[31m     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+   [32m✓[39m journey: the dashboard counts the visible register[2m > [22mmy work is mine, not the register’s[32m 217[2mms[22m[39m
+   [32m✓[39m journey: the dashboard counts the visible register[2m > [22ma confidential matter is missing from the figures of a caller who may not see it[32m 228[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 8 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m convex/journeys.test.ts[2m > [22mjourney: standing up the deployment[2m > [22man upsert with an id amends in place rather than duplicating
+[31m[1mError[22m: Mutation for Configuration/Saved tag recorded no audit row. Call ctx.audit(...), or declare `audit: { skip: "<reason>" }`.[39m
+[36m [2m❯[22m Object.onSuccess convex/lib/functions.ts:[2m241:19[22m[39m
+    [90m239| [39m        onSuccess[33m:[39m [35masync[39m () [33m=>[39m {
+    [90m240| [39m          [35mif[39m ([33m![39m[34misSkipped[39m(config[33m.[39maudit) [33m&&[39m auditRows [33m===[39m [34m0[39m) {
+    [90m241| [39m            [35mthrow[39m [35mnew[39m [33mError[39m(
+    [90m   | [39m                  [31m^[39m
+    [90m242| [39m              `Mutation for ${config.audit.entity}/${config.audit.acti…
+    [90m243| [39m                'Call ctx.audit(...), or declare `audit: { skip: "<rea…
+[90m [2m❯[22m handler ../../../Web%20projects/HYPREP/Litigation%20Case%20Management%20System/node_modules/convex-helpers/server/customFunctions.js:[2m267:37[22m[39m
+[90m [2m❯[22m invokeFunction ../../../Web%20projects/HYPREP/Litigation%20Case%20Management%20System/node_modules/convex/dist/esm/server/impl/registration_impl.js:[2m56:14[22m[39m
+[90m [2m❯[22m invokeMutation ../../../Web%20projects/HYPREP/Litigation%20Case%20Management%20System/node_modules/convex/dist/esm/server/impl/registration_impl.js:[2m42:18[22m[39m
+[90m [2m❯[22m runMutationWithHandler node_modules/convex-test/dist/index.js:[2m1672:31[22m[39m
+[90m [2m❯[22m Object.mutationFromPath node_modules/convex-test/dist/index.js:[2m1813:32[22m[39m
+[90m [2m❯[22m mutation node_modules/convex-test/dist/index.js:[2m1861:20[22m[39m
+[90m [2m❯[22m convex/journeys.test.ts:[2m557:19[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m convex/journeys.test.ts[2m > [22mjourney: notes and the internal-only line[2m > [22mexternal counsel does not see the internal notes on their own matter
+[31m[1mAssertionError[22m: expected [ …(2) ] to not include '000000000000000000000010030notes'[39m
+[36m [2m❯[22m convex/journeys.test.ts:[2m1382:51[22m[39m
+    [90m1380| [39m
+    [90m1381| [39m    const seen = await w.as.external.query(api.notes.list, { caseId: m…
+    [90m1382| [39m    expect(seen.notes.map((note) => note.id)).not.toContain(internalNo…
+    [90m   | [39m                                                  [31m^[39m
+    [90m1383| [39m    [34mexpect[39m(seen[33m.[39mnotes)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m1384| [39m    [34mexpect[39m(seen[33m.[39mhiddenInternalCount)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m convex/journeys.test.ts[2m > [22mjourney: notes and the internal-only line[2m > [22mthe detail bundle withholds internal notes from external counsel
+[31m[1mAssertionError[22m: expected [ …(2) ] to not include '000000000000000000000010030notes'[39m
+[36m [2m❯[22m convex/journeys.test.ts:[2m1392:53[22m[39m
+    [90m1390| [39m
+    [90m1391| [39m    const detail = await w.as.external.query(api.cases.getDetail, { ca…
+    [90m1392| [39m    expect(detail.notes.map((note) => note.id)).not.toContain(internal…
+    [90m   | [39m                                                    [31m^[39m
+    [90m1393| [39m    [34mexpect[39m(detail[33m.[39mnotes)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m1394| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m convex/journeys.test.ts[2m > [22mjourney: roles decide what a caller may do[2m > [22mthe register is the caseload for a role scoped to assigned matters
+[31m[1mError[22m: Your role does not permit this action (case.view.all).[39m
+[36m [2m❯[22m requirePermission convex/lib/actor.ts:[2m257:11[22m[39m
+    [90m255| [39mexport function requirePermission(actor: Actor, permission: Permission…
+    [90m256| [39m  [35mif[39m ([33m![39mactor[33m.[39m[34mcan[39m(permission)) {
+    [90m257| [39m    throw new AccessError(`Your role does not permit this action (${pe…
+    [90m   | [39m          [31m^[39m
+    [90m258| [39m  }
+    [90m259| [39m}
+[90m [2m❯[22m input convex/lib/functions.ts:[2m127:39[22m[39m
+[90m [2m❯[22m handler ../../../Web%20projects/HYPREP/Litigation%20Case%20Management%20System/node_modules/convex-helpers/server/customFunctions.js:[2m261:35[22m[39m
+[90m [2m❯[22m invokeFunction ../../../Web%20projects/HYPREP/Litigation%20Case%20Management%20System/node_modules/convex/dist/esm/server/impl/registration_impl.js:[2m56:14[22m[39m
+[90m [2m❯[22m invokeQuery ../../../Web%20projects/HYPREP/Litigation%20Case%20Management%20System/node_modules/convex/dist/esm/server/impl/registration_impl.js:[2m163:18[22m[39m
+[90m [2m❯[22m runQueryWithHandler node_modules/convex-test/dist/index.js:[2m1708:31[22m[39m
+[90m [2m❯[22m Object.queryFromPath node_modules/convex-test/dist/index.js:[2m1767:32[22m[39m
+[90m [2m❯[22m query node_modules/convex-test/dist/index.js:[2m1852:20[22m[39m
+[90m [2m❯[22m convex/journeys.test.ts:[2m1676:22[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m convex/journeys.test.ts[2m > [22mjourney: an outstanding MFA enrolment[2m > [22mstops the writes and leaves the reads alone
+[31m[1mAssertionError[22m: promise resolved "{ id: '000000000000000000000010022ca…' }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Error {[39m
+[32m-   "message": "rejected promise",[39m
+[31m+ {[39m
+[31m+   "id": "000000000000000000000010022cases",[39m
+[2m  }[22m
+
+[36m [2m❯[22m convex/journeys.test.ts:[2m1792:5[22m[39m
+    [90m1790| [39m        input[33m:[39m [34mcaseDraft[39m(w[33m,[39m { priority[33m:[39m [32m'Critical'[39m })[33m,[39m
+    [90m1791| [39m      })[33m,[39m
+    [90m1792| [39m    ).rejects.toThrow('Two-factor authentication is required for your …
+    [90m   | [39m    [31m^[39m
+    [90m1793| [39m
+    [90m1794| [39m    [35mawait[39m [34mexpect[39m(
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m convex/journeys.test.ts[2m > [22mjourney: an outstanding MFA enrolment[2m > [22menrolling discharges it and the next write goes through
+[31m[1mAssertionError[22m: promise resolved "{ …(2) }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Error {[39m
+[32m-   "message": "rejected promise",[39m
+[31m+ {[39m
+[31m+   "caseId": "000000000000000000000010022cases",[39m
+[31m+   "id": "000000000000000000000010026notes",[39m
+[2m  }[22m
+
+[36m [2m❯[22m convex/journeys.test.ts:[2m1832:5[22m[39m
+    [90m1830| [39m        internalOnly[33m:[39m [35mfalse[39m[33m,[39m
+    [90m1831| [39m      })[33m,[39m
+    [90m1832| [39m    ).rejects.toThrow('Two-factor authentication is required for your …
+    [90m   | [39m    [31m^[39m
+    [90m1833| [39m
+    [90m1834| [39m    // Enrolment itself runs through Better Auth, so the state it leav…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m convex/journeys.test.ts[2m > [22mjourney: an outstanding MFA enrolment[2m > [22man individual requirement binds one account, whatever the role rule says
+[31m[1mAssertionError[22m: promise resolved "{ …(2) }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Error {[39m
+[32m-   "message": "rejected promise",[39m
+[31m+ {[39m
+[31m+   "caseId": "000000000000000000000010022cases",[39m
+[31m+   "id": "000000000000000000000010027notes",[39m
+[2m  }[22m
+
+[36m [2m❯[22m convex/journeys.test.ts:[2m1865:5[22m[39m
+    [90m1863| [39m        internalOnly[33m:[39m [35mfalse[39m[33m,[39m
+    [90m1864| [39m      })[33m,[39m
+    [90m1865| [39m    ).rejects.toThrow('Two-factor authentication is required for your …
+    [90m   | [39m    [31m^[39m
+    [90m1866| [39m
+    [90m1867| [39m    // The officer, same settings, no individual requirement: unaffect…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m convex/journeys.test.ts[2m > [22mjourney: the dashboard counts the visible register[2m > [22mthe figures add up over the whole register
+[31m[1mError[22m: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[36m [2m❯[22m convex/journeys.test.ts:[2m2115:3[22m[39m
+    [90m2113| [39m
+    [90m2114| [39m[34mdescribe[39m([32m'journey: the dashboard counts the visible register'[39m[33m,[39m () [33m=>[39m {
+    [90m2115| [39m  [34mtest[39m([32m'the figures add up over the whole register'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m2116| [39m    [35mconst[39m w [33m=[39m [35mawait[39m [34mseedWorld[39m()[33m;[39m
+    [90m2117| [39m    [35mawait[39m [34maWorkingRegister[39m(w)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[31m8 failed[39m[22m[2m | [22m[1m[32m130 passed[39m[22m[90m (138)[39m
+[2m   Start at [22m 17:40:38
+[2m   Duration [22m 54.40s[2m (transform 6.00s, setup 0ms, collect 30.77s, tests 55.13s, environment 3.02s, prepare 25.32s)[22m
+

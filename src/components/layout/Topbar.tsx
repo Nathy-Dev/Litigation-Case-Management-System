@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck, Menu, Repeat2, Search, Settings, User as UserIcon } from 'lucide-react';
+import { Bell, CheckCheck, Menu, Search, Settings, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatRelative } from '@/lib/format';
 import { ROLE_LABELS } from '@/lib/permissions';
@@ -7,9 +7,7 @@ import { useAuthStore, useCurrentUser } from '@/store/authStore';
 import { useDataStore } from '@/store/dataStore';
 import { useUiStore } from '@/store/uiStore';
 import { Avatar } from '@/components/ui/Avatar';
-import { Dropdown, MenuItem, MenuLabel, MenuSeparator } from '@/components/ui/Dropdown';
-import { ROLES } from '@/types';
-import { DEMO_MODE } from '@/lib/env';
+import { Dropdown, MenuItem, MenuSeparator } from '@/components/ui/Dropdown';
 
 function SearchTrigger() {
   const open = useUiStore((state) => state.setCommandPalette);
@@ -126,60 +124,6 @@ function NotificationsBell() {
   );
 }
 
-/**
- * Presenter aid: jump straight into any demo persona so reviewers can see each
- * role-based dashboard without signing in and out.
- */
-function RoleSwitcher() {
-  const users = useDataStore((state) => state.users);
-  const signInAs = useAuthStore((state) => state.signInAs);
-  const current = useCurrentUser();
-
-  const demoUsers = ROLES.map((role) => users.find((u) => u.role === role && u.status === 'active')).filter(
-    (u): u is NonNullable<typeof u> => Boolean(u),
-  );
-
-  return (
-    <Dropdown
-      width="w-72"
-      trigger={({ toggle, open }) => (
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={open}
-          className="hidden items-center gap-1.5 rounded-lg border border-dashed border-gold-400 bg-gold-50 px-2.5 py-1.5 text-[12px] font-medium text-gold-800 transition-colors hover:bg-gold-100 lg:inline-flex"
-        >
-          <Repeat2 className="size-3.5" aria-hidden />
-          Demo: {current ? ROLE_LABELS[current.role] : 'pick a role'}
-        </button>
-      )}
-    >
-      {(close) => (
-        <>
-          <MenuLabel>Switch demo persona</MenuLabel>
-          {demoUsers.map((user) => (
-            <MenuItem
-              key={user.id}
-              onClick={() => {
-                signInAs(user.id);
-                close();
-              }}
-              icon={<Avatar user={user} size="xs" />}
-              hint={current?.id === user.id ? 'current' : undefined}
-            >
-              {user.fullName} · {ROLE_LABELS[user.role]}
-            </MenuItem>
-          ))}
-          <MenuSeparator />
-          <p className="px-3 pt-1 pb-2 text-[11px] leading-snug text-ink-400">
-            Prototype only — the live system will not allow role switching without re-authentication.
-          </p>
-        </>
-      )}
-    </Dropdown>
-  );
-}
-
 function UserMenu() {
   const user = useCurrentUser();
   const signOut = useAuthStore((state) => state.signOut);
@@ -252,7 +196,6 @@ export function Topbar() {
       <SearchTrigger />
 
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-        {DEMO_MODE && <RoleSwitcher />}
         <NotificationsBell />
         <UserMenu />
       </div>

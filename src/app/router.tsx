@@ -1,8 +1,33 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  Navigate,
+  useRouteError,
+  isRouteErrorResponse,
+} from 'react-router-dom';
 import type { ComponentType } from 'react';
 import type { Permission } from '@/types';
 import { AppShell } from '@/components/layout/AppShell';
-import { RequireAuth, RequirePermission } from './guards';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { RequireAuth, RequireCompliance, RequirePermission, RequireSession } from './guards';
+
+/**
+ * The router's `errorElement`: a branded recovery screen instead of the raw
+ * "Unexpected Application Error!" page React Router renders by default.
+ *
+ * It is a component (not an element) because it needs `useRouteError` to read
+ * what actually failed - a route-error response (404/500) or a thrown Error
+ * from a lazy page, loader or render.
+ */
+function RouteError() {
+  const error = useRouteError();
+  let message = 'Something went wrong while loading this screen.';
+  if (isRouteErrorResponse(error)) {
+    message = `${error.status} ${error.statusText}`;
+  } else if (error instanceof Error && error.message) {
+    message = error.message;
+  }
+  return <ErrorFallback message={message} />;
+}
 
 // The first screens a reviewer sees are bundled eagerly; everything else is a
 // separate chunk fetched on first navigation, so the initial load stays small.
@@ -36,14 +61,19 @@ function page(
 const CASE_VIEW: Permission[] = ['case.view.all', 'case.view.assigned'];
 
 export const router = createBrowserRouter([
-  { path: '/sign-in', element: <SignInPage /> },
+  { path: '/sign-in', element: <SignInPage />, errorElement: <RouteError /> },
   {
     path: '/',
     element: (
-      <RequireAuth>
-        <AppShell />
-      </RequireAuth>
+      <RequireSession>
+        <RequireAuth>
+          <RequireCompliance>
+            <AppShell />
+          </RequireCompliance>
+        </RequireAuth>
+      </RequireSession>
     ),
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <DashboardPage /> },
 

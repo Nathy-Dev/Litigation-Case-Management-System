@@ -165,13 +165,14 @@ export function CaseFormPage() {
       notify({ variant: 'success', title: 'Matter updated', description: existing.caseId });
       navigate(`/cases/${existing.id}`);
     } else {
-      const created = createCase(payload, actorId);
-      notify({
-        variant: 'success',
-        title: 'Matter opened',
-        description: `${created.caseId} has been added to the register.`,
+      void createCase(payload, actorId).then((created) => {
+        notify({
+          variant: 'success',
+          title: 'Matter opened',
+          description: `${created.caseId} has been added to the register.`,
+        });
+        navigate(`/cases/${created.id}`);
       });
-      navigate(`/cases/${created.id}`);
     }
   };
 

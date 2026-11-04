@@ -1,5 +1,5 @@
 import type { AppNotification, CaseStatus, CourtDate, Task, User } from '@/types';
-import type { Dataset } from '@/mocks/generate';
+import type { Dataset } from './types';
 import { visibleTasks, type CaseRow, type TaskAccess } from './cases';
 import { AGE_BUCKETS, ageBucket, daysUntil } from '@/lib/format';
 import { CASE_STATUSES } from '@/types';

@@ -1,0 +1,58 @@
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vite.config.ts:10:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+[36mvite v8.2.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 3144 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.99 kB │ gzip:   0.50 kB
+dist/assets/index-gMJkL4Dq.css                 59.03 kB │ gzip:  11.06 kB
+dist/assets/chevron-down-CrD_Qgyh.js            0.11 kB │ gzip:   0.13 kB
+dist/assets/arrow-left-BVDKdw8I.js              0.15 kB │ gzip:   0.15 kB
+dist/assets/clock-X0_iWZlK.js                   0.15 kB │ gzip:   0.15 kB
+dist/assets/rotate-ccw-BCxeFbaw.js              0.18 kB │ gzip:   0.17 kB
+dist/assets/laptop-BeTPFoY5.js                  0.29 kB │ gzip:   0.22 kB
+dist/assets/useNow-CMN2gsvI.js                  0.29 kB │ gzip:   0.22 kB
+dist/assets/printer-Bgejy26P.js                 0.30 kB │ gzip:   0.22 kB
+dist/assets/save-ZO-GXjY7.js                    0.31 kB │ gzip:   0.21 kB
+dist/assets/trash-2-BQW9AxIF.js                 0.31 kB │ gzip:   0.20 kB
+dist/assets/upload-CwX5DzD9.js                  0.37 kB │ gzip:   0.27 kB
+dist/assets/sparkles-DkAqJfF4.js                0.48 kB │ gzip:   0.27 kB
+dist/assets/pure-fXUWioRH.js                    0.48 kB │ gzip:   0.31 kB
+dist/assets/workflow-NO9n4K9R.js                0.58 kB │ gzip:   0.32 kB
+dist/assets/Disclosure-DTUkYCzK.js              1.32 kB │ gzip:   0.66 kB
+dist/assets/NotFoundPage-CnABthCR.js            2.17 kB │ gzip:   0.98 kB
+dist/assets/ReportTable-DKFncgnV.js             2.34 kB │ gzip:   1.11 kB
+dist/assets/AdminLayout-_AR38ry6.js             2.37 kB │ gzip:   1.12 kB
+dist/assets/exportFile-DHNxmG4s.js              2.57 kB │ gzip:   1.33 kB
+dist/assets/Tabs-BRUeEE2w.js                    3.00 kB │ gzip:   1.36 kB
+dist/assets/SearchResultsPage-ES52DyGl.js       4.58 kB │ gzip:   1.96 kB
+dist/assets/NotificationsPage-BJCjlNy2.js       5.50 kB │ gzip:   2.25 kB
+dist/assets/AdminRolesPage-zyjbAfqs.js          5.52 kB │ gzip:   2.09 kB
+dist/assets/DocumentsPage-D1RLQHvw.js           6.34 kB │ gzip:   2.57 kB
+dist/assets/AdminAuditPage-DJqBD76G.js          6.65 kB │ gzip:   2.56 kB
+dist/assets/TaskDialog-DzMBxyPb.js              8.29 kB │ gzip:   2.91 kB
+dist/assets/TasksPage-D6qt07rK.js               8.56 kB │ gzip:   3.22 kB
+dist/assets/RecordOutcomeDialog-DjmYo2np.js     8.60 kB │ gzip:   2.97 kB
+dist/assets/ReportsPage-BntosjXe.js             8.60 kB │ gzip:   3.25 kB
+dist/assets/ProfilePage-BLOLoTOK.js             9.14 kB │ gzip:   3.27 kB
+dist/assets/AdminSystemPage-CfxqFWGA.js        10.86 kB │ gzip:   3.62 kB
+dist/assets/ReportBuilderPage-CqwI-NsW.js      10.87 kB │ gzip:   3.82 kB
+dist/assets/AdminConfigPage-EPuMWKt6.js        15.24 kB │ gzip:   4.67 kB
+dist/assets/AdminUsersPage-CuNwv4VB.js         15.79 kB │ gzip:   5.20 kB
+dist/assets/UploadDocumentDialog-BVD1mqIH.js   15.81 kB │ gzip:   5.38 kB
+dist/assets/CalendarPage-DtQJpWHY.js           21.20 kB │ gzip:   6.76 kB
+dist/assets/CaseDetailPage-BT-Rv5QP.js         29.71 kB │ gzip:   8.10 kB
+dist/assets/Tooltip-n7vjnFYk.js               107.67 kB │ gzip:  33.17 kB
+dist/assets/CaseFormPage-yJoGTTzS.js          111.66 kB │ gzip:  33.21 kB
+dist/assets/utils-B0N6XlcJ.js                 129.46 kB │ gzip:  42.62 kB
+dist/assets/index-vRL6O0LH.js                 757.87 kB │ gzip: 220.22 kB
+
+[32m✓ built in 44.82s[39m
+[33m[33m[PLUGIN_TIMINGS] [0mYour build spent 40% of 44.6s inside plugin hooks (17.8s).
+Measured inside the callback, so queue time is excluded and time the callback itself awaited is not:
+  - @tailwindcss/vite:generate:build transform (24%, 10.5s, 1 call)
+  - vite:css-post renderChunk (12%, 5.5s, 40 calls)
+See https://rolldown.rs/reference/InputOptions.checks#plugintimings for more details.
+[39m

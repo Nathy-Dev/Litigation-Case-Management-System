@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    /* The Convex functions directory is bundled and run by Convex, not Vite, so
+       it gets its own compiler settings rather than inheriting the app's. */
+    "target": "ESNext",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Same strictness as the app: this code is the security boundary. */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["./**/*"],
+  "exclude": ["**/*.test.ts"]
+}
