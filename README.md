@@ -1,5 +1,31 @@
 # React + TypeScript + Vite
 
+## Production deployment
+
+The litigation frontend is hosted at `https://lcms-hyprep.vercel.app` and uses
+the production Convex deployment `coordinated-grouse-202`.
+
+The tracked `.env.production` contains only the public production backend URLs.
+Vite loads it for production builds without changing `.env.local` or the
+development deployment. Vercel environment variables override these defaults,
+so any production overrides must point to the same production backend:
+
+```dotenv
+VITE_CONVEX_URL=https://coordinated-grouse-202.eu-west-1.convex.cloud
+VITE_CONVEX_SITE_URL=https://coordinated-grouse-202.eu-west-1.convex.site
+```
+
+Use `npm run build` and the `dist` output directory in Vercel. A build refuses
+missing backend URLs rather than publishing a blank page. Redeploy after
+changing build environment variables; an existing JavaScript bundle does not
+pick up those changes automatically.
+
+Convex production must separately configure `SITE_URL` as
+`https://lcms-hyprep.vercel.app` and a securely generated `BETTER_AUTH_SECRET`.
+Keep that secret in Convex environment variables, never in frontend variables
+or committed files. Super-admin accounts must enroll an authenticator at first
+sign-in before accessing protected screens.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
