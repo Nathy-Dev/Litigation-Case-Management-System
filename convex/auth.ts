@@ -2,7 +2,7 @@ import { createClient, type GenericCtx } from '@convex-dev/better-auth';
 import { convex, crossDomain } from '@convex-dev/better-auth/plugins';
 import { requireActionCtx, requireRunMutationCtx } from '@convex-dev/better-auth/utils';
 import { betterAuth } from 'better-auth/minimal';
-import { APIError, createAuthMiddleware, getIp, isAPIError } from 'better-auth/api';
+import { APIError, createAuthMiddleware, getIP, isAPIError } from 'better-auth/api';
 import { twoFactor } from 'better-auth/plugins/two-factor';
 import { genericOAuth } from 'better-auth/plugins/generic-oauth';
 import { v } from 'convex/values';
@@ -181,11 +181,11 @@ const trustedProxies = (process.env.TRUSTED_PROXIES ?? '')
  */
 function requestContext(hookCtx: {
   headers?: Headers | undefined;
-  context: { options: Parameters<typeof getIp>[1] };
+  context: { options: Parameters<typeof getIP>[1] };
 }): { ipAddress: string | null; userAgent: string | null } {
   const headers = hookCtx.headers ?? new Headers();
   return {
-    ipAddress: blankToNull(getIp(headers, hookCtx.context.options)),
+    ipAddress: blankToNull(getIP(headers, hookCtx.context.options)),
     userAgent: blankToNull(headers.get('user-agent')),
   };
 }
@@ -372,8 +372,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
                   scopes: ['openid', 'email', 'profile'],
                   pkce: true,
                   disableSignUp: true,
-                  requireIssuerValidation: true,
-                  issuer: process.env.SSO_OIDC_ISSUER,
+                  requireIdTokenVerification: true,
                   redirectURI: `${process.env.CONVEX_SITE_URL}/api/auth/callback/oidc`,
                   // Map the IdP's claims onto Better Auth's user shape. The email
                   // is the join key to the domain `users` table; the name is what
@@ -407,7 +406,10 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         // waiting for a redeploy. The OIDC sign-in entry is `/sign-in/oidc`; the
         // callback is the second hop and the session is already minted by then,
         // so the gate lives on the entry, exactly like the email gate below.
-        if (path === '/sign-in/oidc') {
+        if (
+          path === '/sign-in/oidc' ||
+          (path === '/sign-in/social' && hookCtx.body?.provider === 'oidc')
+        ) {
           const ssoEnabled = await run().runQuery(internal.authEvents.isSsoEnabled);
           if (!ssoEnabled) {
             throw new APIError('FORBIDDEN', {
@@ -415,6 +417,20 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
             });
           }
           return;
+        }
+
+        if (
+          path === '/callback/oidc' ||
+          (path === '/callback/:id' && hookCtx.params?.id === 'oidc')
+        ) {
+          const issuer =
+            process.env.SSO_OIDC_ISSUER ??
+            hookCtx.context.socialProviders.find((provider) => provider.id === 'oidc')?.issuer;
+          if (!issuer || hookCtx.query?.iss !== issuer) {
+            throw new APIError('FORBIDDEN', {
+              message: 'Single sign-on returned an invalid issuer.',
+            });
+          }
         }
 
         if (path === '/sign-in/email') {

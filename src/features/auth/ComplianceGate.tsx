@@ -83,17 +83,27 @@ function MfaEnrolment({ onError }: { onError: (message: string | null) => void }
     setBusy(true);
     onError(null);
     try {
-      const response = await authClient.twoFactor.enable({ password });
+      const response = await authClient.twoFactor.enable({ password, method: 'totp' });
       if (response.error) {
         onError(response.error.message ?? 'Could not start two-factor enrolment.');
         return;
       }
-      const data = (response.data ?? {}) as { totpURI?: string; totpSecret?: string; backupCodes?: string[] };
+      const data = response.data;
+      if (data?.method !== 'totp' || !data.totpURI) {
+        onError('Could not create an authenticator setup. Try again shortly.');
+        return;
+      }
+      const secret = new URL(data.totpURI).searchParams.get('secret');
+      if (!secret) {
+        onError('Could not create an authenticator setup. Try again shortly.');
+        return;
+      }
       setProvisioned({
-        totpUri: data.totpURI ?? '',
-        secret: data.totpSecret ?? '',
-        backupCodes: data.backupCodes ?? [],
+        totpUri: data.totpURI,
+        secret,
+        backupCodes: data.backupCodes,
       });
+      setPassword('');
     } catch {
       onError('Two-factor enrolment is unavailable right now. Try again shortly.');
     } finally {
@@ -170,7 +180,7 @@ function MfaEnrolment({ onError }: { onError: (message: string | null) => void }
             <p className="text-[12px] font-semibold text-ink-700">Setup key</p>
             <div className="mt-1 flex items-center gap-2">
               <code className="min-w-0 flex-1 truncate font-mono text-[12px] text-ink-700">
-                {provisioned.secret || provisioned.totpUri.split('secret=')[1]?.split('&')[0] || '—'}
+                {provisioned.secret}
               </code>
               <button
                 type="button"

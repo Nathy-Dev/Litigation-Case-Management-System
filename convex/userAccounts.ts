@@ -238,11 +238,10 @@ export const invite = authedAction({
     if (clash !== null) throw new Error(`${email} already has an account on this system.`);
 
     const authCtx = await createAuth(ctx).$context;
-    const created = await authCtx.internalAdapter.createUser({
-      email,
-      name: fullName,
-      emailVerified: true,
-    });
+    const created = await authCtx.internalAdapter.createUser(
+      { email, name: fullName, emailVerified: true },
+      { method: 'admin' },
+    );
 
     let userId: Id<'users'>;
     try {
@@ -676,11 +675,10 @@ export const importUsers = authedAction({
 
       let authUserId: string | null = null;
       try {
-        const created = await authCtx.internalAdapter.createUser({
-          email,
-          name: fullName,
-          emailVerified: true,
-        });
+        const created = await authCtx.internalAdapter.createUser(
+          { email, name: fullName, emailVerified: true },
+          { method: 'admin' },
+        );
         authUserId = created.id;
 
         const userId = await ctx.runMutation(internal.users.insertProvisioned, {

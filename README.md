@@ -26,6 +26,24 @@ Keep that secret in Convex environment variables, never in frontend variables
 or committed files. Super-admin accounts must enroll an authenticator at first
 sign-in before accessing protected screens.
 
+### Authentication and MFA upgrades
+
+Keep the auth dependencies on the compatible pair in `package.json`:
+`@convex-dev/better-auth` 0.13.x and `better-auth` 1.7.x. The component schema
+must support MFA failure counters and lock expiry, and its adapter must support
+atomic verification consumption and counter updates. An older component can
+reject the MFA setup request even when password sign-in succeeds.
+
+Deploy the Convex backend and redeploy the Vercel frontend together after an
+auth dependency change. Keep `BETTER_AUTH_SECRET` unchanged during upgrades;
+existing authenticator secrets and sessions depend on it. Do not disable MFA
+to work around an enrollment failure.
+
+Run `npm test -- convex/auth.test.ts` for enrollment, second-factor token gating,
+lockout, challenge exhaustion, and logout regression coverage. These tests use
+an in-memory database and never enroll an authenticator on a production account.
+The account owner must scan the production QR code and verify a code themselves.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:

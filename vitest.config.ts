@@ -22,7 +22,7 @@ export default defineConfig({
   test: {
     environment: 'edge-runtime',
     include: ['convex/**/*.test.ts', 'src/**/*.test.ts'],
-    server: { deps: { inline: ['convex-test'] } },
+    server: { deps: { inline: ['convex-test', '@convex-dev/better-auth'] } },
   },
   resolve: {
     alias: {

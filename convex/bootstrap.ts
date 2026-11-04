@@ -232,13 +232,16 @@ export const firstSuperAdmin = action({
         });
       }
     } else {
-      const created = await internalAdapter.createUser({
-        email,
-        name: fullName,
-        // Nobody self-registered and no verification email is sent, so leaving
-        // this false would mark the account unverified forever.
-        emailVerified: true,
-      });
+      const created = await internalAdapter.createUser(
+        {
+          email,
+          name: fullName,
+          // Nobody self-registered and no verification email is sent, so leaving
+          // this false would mark the account unverified forever.
+          emailVerified: true,
+        },
+        { method: 'admin' },
+      );
       authUserId = created.id;
       await internalAdapter.linkAccount({
         userId: authUserId,

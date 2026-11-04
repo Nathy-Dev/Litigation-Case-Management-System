@@ -12,13 +12,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@convex-dev/better-auth": "^0.12.5",
+    "@convex-dev/better-auth": "^0.13.0",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@hookform/resolvers": "^5.9.1",
     "@types/nodemailer": "^8.0.1",
-    "better-auth": "^1.6.20",
+    "better-auth": "~1.7.16",
     "clsx": "^2.1.1",
-    "convex": "^1.45.0",
+    "convex": "^1.46.0",
     "convex-helpers": "^0.1.123",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.33.0",
@@ -34,6 +34,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@better-auth/utils": "^0.5.1",
     "@edge-runtime/vm": "^5.0.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
