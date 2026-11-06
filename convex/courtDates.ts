@@ -40,6 +40,7 @@ const courtDateInput = v.object({
 });
 
 const listArgs = v.object({
+  caseId: v.optional(v.id('cases')),
   from: v.optional(v.string()),
   to: v.optional(v.string()),
   courtIds: v.optional(v.array(v.id('courts'))),
@@ -77,6 +78,7 @@ async function visibleCourtDates(
   const visible: Doc<'courtDates'>[] = [];
 
   for (const sitting of all) {
+    if (args.caseId && sitting.caseId !== args.caseId) continue;
     if (args.courtIds?.length && !args.courtIds.includes(sitting.courtId)) continue;
     if (args.caseIds?.length && !args.caseIds.includes(sitting.caseId)) continue;
     if (args.includeCompleted === false && sitting.outcome) continue;

@@ -139,6 +139,15 @@ async function invalidCode(authenticator: ReturnType<typeof createOTP>) {
 }
 
 describe('production-compatible MFA authentication', () => {
+  test('projects the real session expiry and rejects expired application access', async () => {
+    const fixture = await createFixture();
+    const response = await fixture.browser.request('/get-session');
+    const session = await response.json();
+    const projection = await fixture.backend.run((ctx) => ctx.db.query('userSessions').withIndex('by_authSessionId', (query) => query.eq('authSessionId', session.session.id)).unique());
+    expect(projection?.expiresAt).toBe(typeof session.session.expiresAt === 'number' ? session.session.expiresAt : Date.parse(session.session.expiresAt));
+    await fixture.backend.run((ctx) => ctx.db.patch(projection!._id, { expiresAt: Date.now() - 1 }));
+    expect(await getCompliance(fixture)).toMatchObject({ kind: 'session-ended', reason: expect.stringMatching(/expired/) });
+  });
   test('requires a session and keeps public registration closed', async () => {
     const fixture = await createFixture();
     const anonymous = createBrowser(fixture.backend);

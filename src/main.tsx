@@ -5,6 +5,11 @@ import { ConvexBetterAuthProvider, type AuthClient as ProviderAuthClient } from 
 import './index.css';
 import { App } from './App';
 import { authClient } from './authClient';
+import { initSentry } from './lib/sentry';
+
+// Initialise Sentry before the React tree so uncaught errors during render
+// are captured. No-op when VITE_SENTRY_DSN is not set.
+initSentry();
 
 /**
  * The WebSocket client for the Convex deployment, wired to Better Auth.

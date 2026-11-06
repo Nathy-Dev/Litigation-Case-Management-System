@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { CoatOfArms } from '@/components/brand/CoatOfArms';
+import { reportError } from '@/lib/sentry';
 
 /**
  * The branded recovery screen, shared by the top-level `ErrorBoundary` (render
@@ -69,6 +70,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack);
+    reportError(error, { componentStack: info.componentStack ?? undefined });
   }
 
   render() {

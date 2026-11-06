@@ -24,9 +24,7 @@ const crons = cronJobs();
  * Walks the diary for sittings whose reminder window has opened and delivers
  * the in-app notification plus email/SMS fan-out exactly once per offset.
  */
-crons.interval('hearing-reminders', { hours: 1 }, internal.cronHandlers.runReminders, {
-  now: new Date().toISOString(),
-});
+crons.interval('hearing-reminders', { hours: 1 }, internal.cronHandlers.runReminders, {});
 
 // ---------------------------------------------------------------------------
 // Daily / weekly digest (Africa/Lagos morning).
@@ -36,9 +34,7 @@ crons.interval('hearing-reminders', { hours: 1 }, internal.cronHandlers.runRemin
  * Runs at 08:00 UTC = 09:00 Africa/Lagos, on the cadence the settings doc
  * asks for. The handler reads `settings.digestFrequency` and no-ops on 'off'.
  */
-crons.cron('digest', '0 8 * * *', internal.cronHandlers.runDigest, {
-  now: new Date().toISOString(),
-});
+crons.cron('digest', '0 8 * * *', internal.cronHandlers.runDigest, {});
 
 // ---------------------------------------------------------------------------
 // Overdue-task rollup - nightly reconcile.
@@ -58,18 +54,14 @@ crons.cron('overdue-rollup', '0 1 * * *', internal.cases.internalReconcileRollup
  * default: `internal.cronHandlers.runRetentionSweep` logs what it *would* do
  * and only acts when the setting is on.
  */
-crons.cron('retention-sweep', '0 2 * * *', internal.cronHandlers.runRetentionSweep, {
-  now: new Date().toISOString(),
-});
+crons.cron('retention-sweep', '0 2 * * *', internal.cronHandlers.runRetentionSweep, {});
 
 // ---------------------------------------------------------------------------
 // Backup - per settings.backupSchedule (hourly/daily/weekly), default daily.
 // ---------------------------------------------------------------------------
 
 /** Runs the real export and prunes past `backupRetentionDays`. */
-crons.cron('backup', '0 3 * * *', internal.cronHandlers.runScheduledBackup, {
-  now: new Date().toISOString(),
-});
+crons.cron('backup', '0 * * * *', internal.cronHandlers.runScheduledBackup, {});
 
 // ---------------------------------------------------------------------------
 // OCR requeue - every 15 minutes, drains stuck processing/failed documents.
@@ -81,9 +73,7 @@ crons.interval('ocr-requeue', { minutes: 15 }, internal.cronHandlers.requeueOcr)
 // Webhook retry - every 5 minutes, drains pending deliveries past due.
 // ---------------------------------------------------------------------------
 
-crons.interval('webhook-retry', { minutes: 5 }, internal.cronHandlers.retryWebhooks, {
-  now: new Date().toISOString(),
-});
+crons.interval('webhook-retry', { minutes: 5 }, internal.cronHandlers.retryWebhooks, {});
 
 // ---------------------------------------------------------------------------
 // Storage usage - daily, real sum of document version sizes.

@@ -553,6 +553,8 @@ export interface BackupRecord {
   sizeGb: number;
   location: string;
   status: 'completed' | 'running' | 'failed';
+  archiveAvailable?: boolean;
+  error?: string | null;
 }
 
 // ---------------------------------------------------------------------------

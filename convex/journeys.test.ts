@@ -1,11 +1,12 @@
 import { convexTest } from 'convex-test';
 import type { FunctionArgs } from 'convex/server';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { api, internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import schema from './schema';
 import { DEFAULT_PERMISSION_MATRIX } from './shared/permissions';
 import type { Role } from './shared/enums';
+import { PDFDocument } from 'pdf-lib';
 
 /**
  * HYPREP LCMS - end-to-end journeys.
@@ -111,6 +112,158 @@ const CAST = {
     firm: null,
   },
 } as const;
+
+describe('production safeguards: real files, tickets and record exports', () => {
+  test('rejects metadata-only files and mismatched stored sizes without creating a record', async () => {
+    const world = await seedWorld();
+    const matter = await fileTheMatter(world);
+    const input = await documentDraft(world, matter.id);
+    await expect(world.as.lawyer.mutation(api.documents.finalizeUpload, { input: { ...input, storageId: null } })).rejects.toThrow('Upload the actual file');
+    await expect(world.as.lawyer.mutation(api.documents.finalizeUpload, { input: { ...input, sizeBytes: input.sizeBytes + 1 } })).rejects.toThrow('Invalid file size');
+    expect(await world.as.lawyer.query(api.documents.list, { caseId: matter.id })).toEqual([]);
+  });
+
+  test('rejects a replacement without file content and preserves the current version', async () => {
+    const world = await seedWorld();
+    const matter = await fileTheMatter(world);
+    const filed = await world.as.lawyer.mutation(api.documents.finalizeUpload, { input: await documentDraft(world, matter.id) });
+    await expect(world.as.lawyer.mutation(api.documents.addDocumentVersion, { id: filed.id, changeNote: 'Missing replacement', sizeBytes: 0, storageId: null, storageKey: '' })).rejects.toThrow('Upload the actual replacement file');
+    expect((await world.as.lawyer.query(api.documents.get, { id: filed.id }))?.currentVersion).toBe(1);
+  });
+
+  test('watermarks the stored confidential PDF instead of exposing the original', async () => {
+    const world = await seedWorld();
+    const matter = await fileTheMatter(world);
+    const pdf = await PDFDocument.create();
+    pdf.addPage();
+    const bytes = new Uint8Array(await pdf.save());
+    const storageId = await world.t.run((ctx) => ctx.storage.store(new Blob([bytes], { type: 'application/pdf' })));
+    const filed = await world.as.lawyer.mutation(api.documents.finalizeUpload, { input: await documentDraft(world, matter.id, { confidential: true, storageId, sizeBytes: bytes.byteLength }) });
+    expect(await world.as.lawyer.query(api.documents.getSignedUrl, { id: filed.id })).toEqual({ url: null });
+    const result = await world.as.lawyer.action(api.documents.downloadFile, { id: filed.id });
+    expect(result.name).toBe('Statement of Claim-confidential.pdf');
+    const token = result.url.split('/files/')[1]!;
+    const ticket = await world.t.query(internal.documents.readFileTicket, { token });
+    expect(ticket?.storageId).not.toBe(storageId);
+    const copy = await world.t.run(async (ctx) => (await ctx.storage.get(ticket!.storageId))!.arrayBuffer());
+    expect(new Uint8Array(copy)).not.toEqual(bytes);
+    expect((await PDFDocument.load(copy)).getPageCount()).toBe(1);
+  });
+
+  test('withdraws file tickets when the user is disabled or access is removed', async () => {
+    const world = await seedWorld();
+    const matter = await fileTheMatter(world);
+    const input = await documentDraft(world, matter.id);
+    const token = 'ticket-access-test';
+    await world.t.mutation(internal.documents.createFileTicket, { storageId: input.storageId!, userId: world.users.lawyer, authSessionId: 'journey-session-lawyer', caseId: matter.id, permission: 'document.download', name: input.name, token });
+    expect(await world.t.query(internal.documents.readFileTicket, { token })).not.toBeNull();
+    await world.t.run((ctx) => ctx.db.patch(world.users.lawyer, { status: 'disabled' }));
+    expect(await world.t.query(internal.documents.readFileTicket, { token })).toBeNull();
+    await world.t.run((ctx) => ctx.db.patch(world.users.lawyer, { status: 'active' }));
+    await world.t.run((ctx) => ctx.db.patch(matter.id, { restrictedToUserIds: [world.users.director] }));
+    expect(await world.t.query(internal.documents.readFileTicket, { token })).toBeNull();
+  });
+
+  test('withdraws file tickets for revoked sessions and expired links', async () => {
+    const world = await seedWorld();
+    const matter = await fileTheMatter(world);
+    const input = await documentDraft(world, matter.id);
+    await world.t.run((ctx) => ctx.db.insert('userSessions', { userId: world.users.lawyer, authSessionId: 'ticket-session', device: 'Desktop', browser: 'Test', ipAddress: '', location: '', startedAt: new Date().toISOString(), lastSeenAt: new Date().toISOString(), revokedAt: new Date().toISOString() }));
+    await world.t.mutation(internal.documents.createFileTicket, { storageId: input.storageId!, userId: world.users.lawyer, authSessionId: 'ticket-session', caseId: matter.id, permission: 'document.download', name: input.name, token: 'revoked-session' });
+    expect(await world.t.query(internal.documents.readFileTicket, { token: 'revoked-session' })).toBeNull();
+    await world.t.run((ctx) => ctx.db.insert('fileTickets', { storageId: input.storageId!, userId: world.users.lawyer, authSessionId: null, caseId: matter.id, permission: 'document.download', name: input.name, token: 'expired-ticket', expiresAt: Date.now() - 1 }));
+    expect(await world.t.query(internal.documents.readFileTicket, { token: 'expired-ticket' })).toBeNull();
+  });
+
+  test('refuses confidential office downloads until an approved PDF exists', async () => {
+    const world = await seedWorld();
+    const matter = await fileTheMatter(world);
+    const filed = await world.as.lawyer.mutation(api.documents.finalizeUpload, { input: await documentDraft(world, matter.id, { format: 'docx', name: 'Advice.docx', confidential: true }) });
+    await expect(world.as.lawyer.action(api.documents.downloadFile, { id: filed.id })).rejects.toThrow('approved PDF');
+  });
+
+  test('reads export pages through database queries instead of action database access', async () => {
+    const world = await seedWorld();
+    const first = await world.t.query(internal.backupDb.page, { table: 'users', paginationOpts: { numItems: 2, cursor: null } });
+    expect(first.page).toHaveLength(2);
+    expect(first.isDone).toBe(false);
+    const second = await world.t.query(internal.backupDb.page, { table: 'users', paginationOpts: { numItems: 2, cursor: first.continueCursor } });
+    expect(second.page).toHaveLength(2);
+    expect(second.page.map((user) => user._id)).not.toEqual(first.page.map((user) => user._id));
+  });
+
+  test('does not claim unsupported file-store or incremental backups succeeded', async () => {
+    const world = await seedWorld();
+    await expect(world.as.director.action(api.backup.runBackup, { scope: 'Both' })).rejects.toThrow('platform snapshot');
+    await expect(world.as.director.action(api.backup.runBackup, { type: 'Incremental', scope: 'Database' })).rejects.toThrow('platform snapshot');
+    expect(await world.t.run((ctx) => ctx.db.query('backups').collect())).toEqual([]);
+  });
+
+  test('denies archive downloads to non-administrators and revokes issued links', async () => {
+    const world = await seedWorld();
+    const storageId = await world.t.run((ctx) => ctx.storage.store(new Blob(['test archive'], { type: 'application/gzip' })));
+    const backupId = await world.t.run((ctx) => ctx.db.insert('backups', { startedAt: new Date().toISOString(), completedAt: new Date().toISOString(), type: 'Full', scope: 'Database', sizeGb: 0.0001, location: 'Convex application-record export', status: 'completed', storageId, triggeredById: world.users.director, error: null }));
+    await expect(world.as.observer.mutation(api.backupDb.downloadArchive, { id: backupId })).rejects.toThrow('Your role does not permit');
+    const download = await world.as.director.mutation(api.backupDb.downloadArchive, { id: backupId });
+    const token = download.url.split('/exports/')[1]!;
+    expect((await world.t.query(internal.backupDb.readArchiveTicket, { token }))?.storageId).toBe(storageId);
+    const session = await world.t.run((ctx) => ctx.db.query('userSessions').withIndex('by_authSessionId', (query) => query.eq('authSessionId', 'journey-session-director')).unique());
+    await world.t.run((ctx) => ctx.db.patch(session!._id, { revokedAt: new Date().toISOString() }));
+    expect(await world.t.query(internal.backupDb.readArchiveTicket, { token })).toBeNull();
+  });
+
+  test('refuses missing archives and download tickets without a session record', async () => {
+    const world = await seedWorld();
+    const backupId = await world.t.run((ctx) => ctx.db.insert('backups', { startedAt: new Date().toISOString(), completedAt: null, type: 'Full', scope: 'Database', sizeGb: 0, location: 'Unverified legacy job', status: 'completed', storageId: null, triggeredById: null, error: null }));
+    await expect(world.as.director.mutation(api.backupDb.downloadArchive, { id: backupId })).rejects.toThrow('No completed archive');
+    const matter = await fileTheMatter(world);
+    const input = await documentDraft(world, matter.id);
+    await world.t.mutation(internal.documents.createFileTicket, { storageId: input.storageId!, userId: world.users.lawyer, authSessionId: 'missing-session', caseId: matter.id, permission: 'document.download', name: input.name, token: 'missing-session-ticket' });
+    expect(await world.t.query(internal.documents.readFileTicket, { token: 'missing-session-ticket' })).toBeNull();
+  });
+
+  test('revokes a preview when its document becomes confidential', async () => {
+    const world = await seedWorld();
+    const matter = await fileTheMatter(world);
+    const filed = await world.as.lawyer.mutation(api.documents.finalizeUpload, { input: await documentDraft(world, matter.id) });
+    const preview = await world.as.lawyer.mutation(api.documents.getPreviewUrl, { id: filed.id });
+    const token = preview.url.split('/files/')[1]!;
+    expect((await world.t.query(internal.documents.readFileTicket, { token }))?.inline).toBe(true);
+    expect(await world.as.lawyer.query(api.documents.getSignedUrl, { id: filed.id })).toEqual({ url: null });
+    await world.t.run((ctx) => ctx.db.patch(filed.id, { confidential: true }));
+    expect(await world.t.query(internal.documents.readFileTicket, { token })).toBeNull();
+  });
+
+  test('rejects tokens without a session or with another account session', async () => {
+    const world = await seedWorld();
+    await expect(world.t.withIdentity({ subject: CAST.director.subject }).query(api.cases.list, {})).rejects.toThrow('no session');
+    await expect(world.t.withIdentity({ subject: CAST.director.subject, sessionId: 'journey-session-lawyer' }).query(api.cases.list, {})).rejects.toThrow('cannot be verified');
+  });
+
+  test('allows archive downloads from the configured live website without extra environment setup', async () => {
+    vi.stubEnv('SITE_URL', 'https://lcms.example.test');
+    vi.stubEnv('FRONTEND_ORIGINS', undefined);
+    try {
+      const world = await seedWorld();
+      const storageId = await world.t.run((ctx) => ctx.storage.store(new Blob(['Archive test'], { type: 'application/gzip' })));
+      const backupId = await world.t.run((ctx) => ctx.db.insert('backups', { startedAt: new Date().toISOString(), completedAt: new Date().toISOString(), type: 'Full', scope: 'Database', sizeGb: 0.0001, location: 'Test archive', status: 'completed', storageId, triggeredById: world.users.director, error: null }));
+      const download = await world.as.director.mutation(api.backupDb.downloadArchive, { id: backupId });
+      const path = `/exports/${download.url.split('/exports/')[1]}`;
+      const response = await world.t.fetch(path, { headers: { origin: 'https://lcms.example.test' } });
+      expect(response.status).toBe(200);
+      expect(response.headers.get('access-control-allow-origin')).toBe('https://lcms.example.test');
+      expect(response.headers.get('cache-control')).toBe('private, no-store');
+      expect(await response.text()).toBe('Archive test');
+      const untrusted = await world.t.fetch(path, { headers: { origin: 'https://untrusted.example.test' } });
+      expect(untrusted.headers.get('access-control-allow-origin')).toBeNull();
+      const expired = await world.t.fetch(`/exports/${crypto.randomUUID()}`, { headers: { origin: 'https://lcms.example.test' } });
+      expect(expired.status).toBe(403);
+      expect(expired.headers.get('access-control-allow-origin')).toBe('https://lcms.example.test');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
 
 type CastKey = keyof typeof CAST;
 type Harness = ReturnType<typeof convexTest>;
@@ -348,7 +501,9 @@ async function seedWorld(
 
   const as = {} as Record<CastKey, Harness>;
   for (const key of Object.keys(CAST) as CastKey[]) {
-    as[key] = t.withIdentity({ subject: CAST[key].subject });
+    const sessionId = `journey-session-${key}`;
+    await t.run((ctx) => ctx.db.insert('userSessions', { userId: users[key], authSessionId: sessionId, device: 'Desktop', browser: 'Test', ipAddress: '', location: '', startedAt: new Date().toISOString(), lastSeenAt: new Date().toISOString(), revokedAt: null }));
+    as[key] = t.withIdentity({ subject: CAST[key].subject, sessionId });
   }
 
   return { t, as, users, courts, caseTypes, documentTypes, teamId };
@@ -459,11 +614,11 @@ function taskDraft(
   };
 }
 
-function documentDraft(
+async function documentDraft(
   w: World,
   caseId: Id<'cases'>,
   overrides: Partial<DocumentDraft> = {},
-): DocumentDraft {
+): Promise<DocumentDraft> {
   return {
     caseId,
     name: 'Statement of Claim.pdf',
@@ -473,7 +628,7 @@ function documentDraft(
     tags: ['Remediation'],
     description: 'Originating process as filed at the registry.',
     sizeBytes: 245_760,
-    storageId: null,
+    storageId: await w.t.run((ctx) => ctx.storage.store(new Blob([new Uint8Array(245_760)], { type: 'application/pdf' }))),
     storageKey: 'cases/oml-29/statement-of-claim.pdf',
     ...overrides,
   };
@@ -995,7 +1150,7 @@ describe('journey: the document file', () => {
     const matter = await fileTheMatter(w);
 
     const filed = await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-      input: documentDraft(w, matter.id),
+      input: await documentDraft(w, matter.id),
     });
 
     const rows = await w.as.lawyer.query(api.documents.list, { caseId: matter.id });
@@ -1026,14 +1181,14 @@ describe('journey: the document file', () => {
     const w = await seedWorld();
     const matter = await fileTheMatter(w);
     const filed = await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-      input: documentDraft(w, matter.id),
+      input: await documentDraft(w, matter.id),
     });
 
     await w.as.lawyer.mutation(api.documents.addDocumentVersion, {
       id: filed.id,
       changeNote: 'Amended to plead the second relief.',
       sizeBytes: 302_100,
-      storageId: null,
+      storageId: await w.t.run((ctx) => ctx.storage.store(new Blob([new Uint8Array(302_100)], { type: 'application/pdf' }))),
       storageKey: 'cases/oml-29/statement-of-claim-v2.pdf',
     });
 
@@ -1050,7 +1205,7 @@ describe('journey: the document file', () => {
     const w = await seedWorld();
     const matter = await fileTheMatter(w);
     const filed = await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-      input: documentDraft(w, matter.id),
+      input: await documentDraft(w, matter.id),
     });
 
     await w.as.lawyer.mutation(api.documents.toggleCheckOut, { id: filed.id });
@@ -1070,7 +1225,7 @@ describe('journey: who may touch the file', () => {
     const w = await seedWorld();
     const matter = await fileTheMatter(w);
     const filed = await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-      input: documentDraft(w, matter.id),
+      input: await documentDraft(w, matter.id),
     });
 
     const visible = await w.as.officer.query(api.documents.list, { caseId: matter.id });
@@ -1094,7 +1249,7 @@ describe('journey: who may touch the file', () => {
     const w = await seedWorld();
     const matter = await fileTheMatter(w);
     const filed = await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-      input: documentDraft(w, matter.id),
+      input: await documentDraft(w, matter.id),
     });
 
     await expect(
@@ -1540,7 +1695,7 @@ describe('journey: a matter locked to named users', () => {
       restrictedToUserIds: [w.users.lawyer],
     });
     const filed = await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-      input: documentDraft(w, locked.id),
+      input: await documentDraft(w, locked.id),
     });
     const task = await w.as.lawyer.mutation(api.tasks.createTask, {
       input: taskDraft(w, locked.id),
@@ -1595,7 +1750,7 @@ describe('journey: roles decide what a caller may do', () => {
 
     await expect(
       w.as.observer.mutation(api.documents.finalizeUpload, {
-        input: documentDraft(w, matter.id),
+        input: await documentDraft(w, matter.id),
       }),
     ).rejects.toThrow('(document.upload)');
   });
@@ -1796,7 +1951,7 @@ describe('journey: an outstanding MFA enrolment', () => {
 
     await expect(
       w.as.lawyer.mutation(api.documents.finalizeUpload, {
-        input: documentDraft(w, matter.id),
+        input: await documentDraft(w, matter.id),
       }),
     ).rejects.toThrow('Two-factor authentication is required for your role.');
 
@@ -1936,7 +2091,7 @@ describe('journey: the trail records the work', () => {
     const w = await seedWorld();
     const matter = await fileTheMatter(w);
     await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-      input: documentDraft(w, matter.id),
+      input: await documentDraft(w, matter.id),
     });
     const sitting = await w.as.lawyer.mutation(api.courtDates.createCourtDate, {
       input: hearingDraft(w, matter.id),
@@ -1975,7 +2130,7 @@ describe('journey: the trail records the work', () => {
     const w = await seedWorld();
     const matter = await fileTheMatter(w);
     await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-      input: documentDraft(w, matter.id),
+      input: await documentDraft(w, matter.id),
     });
     await w.as.officer.mutation(api.tasks.createTask, { input: taskDraft(w, matter.id) });
 
@@ -2022,7 +2177,7 @@ describe('journey: the trail records the work', () => {
     const w = await seedWorld();
     const matter = await fileTheMatter(w);
     const filed = await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-      input: documentDraft(w, matter.id),
+      input: await documentDraft(w, matter.id),
     });
 
     await w.as.lawyer.mutation(api.audit.recordReadEvent, {
@@ -2097,7 +2252,7 @@ async function aWorkingRegister(w: World) {
     input: hearingDraft(w, first.id, { startsAt: isoInDays(3) }),
   });
   await w.as.lawyer.mutation(api.documents.finalizeUpload, {
-    input: documentDraft(w, first.id),
+    input: await documentDraft(w, first.id),
   });
   await w.as.lawyer.mutation(api.tasks.createTask, {
     input: taskDraft(w, first.id, { dueDate: dateInDays(2) }),
@@ -2354,7 +2509,7 @@ describe('journey: the closing reports', () => {
       id: filed[0]!.id,
       changeNote: 'Amended to plead the 2019 remediation certificate.',
       sizeBytes: 262_144,
-      storageId: null,
+      storageId: await w.t.run((ctx) => ctx.storage.store(new Blob([new Uint8Array(262_144)], { type: 'application/pdf' }))),
       storageKey: 'cases/oml-29/statement-of-claim-v2.pdf',
     });
 
@@ -2368,7 +2523,7 @@ describe('journey: the closing reports', () => {
     expect(rows[0]!.versions).toBe(2);
     expect(rows[0]!.size).toBe(262_144);
     expect(rows[0]!.confidential).toBe('No');
-    expect(report.caption).toBe('2 documents · 507904 bytes stored.');
+    expect(report.caption).toBe('1 documents · 507904 bytes stored.');
   });
 
   test('a report is computed over the caller\u2019s register, not the whole one', async () => {

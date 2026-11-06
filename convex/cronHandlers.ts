@@ -24,7 +24,7 @@ import { internal } from './_generated/api';
  * write, so a re-run of this job sends nothing twice.
  */
 export const runReminders = internalAction({
-  args: { now: v.string() },
+  args: { now: v.optional(v.string()) },
   returns: v.object({
     skipped: v.optional(v.boolean()),
     reason: v.optional(v.string()),
@@ -33,8 +33,9 @@ export const runReminders = internalAction({
   }),
   handler: async (
     ctx,
-    { now },
+    args,
   ): Promise<{ skipped?: boolean; reason?: string; sent?: number; due?: number }> => {
+    const now = args.now ?? new Date().toISOString();
     const settings = await ctx.runQuery(internal.lib.functions.internalLoadSettings);
     if (settings === null) return { skipped: true, reason: 'no settings' };
 
@@ -111,7 +112,7 @@ export const runReminders = internalAction({
 
 /** The digest: an in-app + email round-up of what is due, sent on the cadence. */
 export const runDigest = internalAction({
-  args: { now: v.string() },
+  args: { now: v.optional(v.string()) },
   returns: v.object({
     skipped: v.optional(v.boolean()),
     reason: v.optional(v.string()),
@@ -119,8 +120,9 @@ export const runDigest = internalAction({
   }),
   handler: async (
     ctx,
-    { now },
+    args,
   ): Promise<{ skipped?: boolean; reason?: string; sent?: number }> => {
+    const now = args.now ?? new Date().toISOString();
     const settings = await ctx.runQuery(internal.lib.functions.internalLoadSettings);
     if (settings === null || settings.digestFrequency === 'off') {
       return { skipped: true, reason: 'digest off' };
@@ -158,7 +160,7 @@ export const runDigest = internalAction({
  * `retentionDeletionEnabled` gates the destructive half.
  */
 export const runRetentionSweep = internalAction({
-  args: { now: v.string() },
+  args: { now: v.optional(v.string()) },
   returns: v.object({
     skipped: v.optional(v.boolean()),
     reason: v.optional(v.string()),
@@ -168,7 +170,7 @@ export const runRetentionSweep = internalAction({
   }),
   handler: async (
     ctx,
-    { now },
+    args,
   ): Promise<{
     skipped?: boolean;
     reason?: string;
@@ -176,6 +178,7 @@ export const runRetentionSweep = internalAction({
     eligible?: number;
     archived?: number;
   }> => {
+    const now = args.now ?? new Date().toISOString();
     const settings = await ctx.runQuery(internal.lib.functions.internalLoadSettings);
     if (settings === null) return { skipped: true, reason: 'no settings' };
 
@@ -202,7 +205,7 @@ export const runRetentionSweep = internalAction({
 
 /** Runs the scheduled export + retention pruning from `crons.ts`. */
 export const runScheduledBackup = internalAction({
-  args: { now: v.string() },
+  args: { now: v.optional(v.string()) },
   returns: v.object({
     backupId: v.union(v.id('backups'), v.null()),
     sizeGb: v.number(),
@@ -213,7 +216,7 @@ export const runScheduledBackup = internalAction({
   }),
   handler: async (
     ctx,
-    { now },
+    args,
   ): Promise<{
     backupId: Id<'backups'> | null;
     sizeGb: number;
@@ -222,6 +225,7 @@ export const runScheduledBackup = internalAction({
     failed?: boolean;
     detail?: string;
   }> => {
+    const now = args.now ?? new Date().toISOString();
     return await ctx.runAction(internal.backup.internalRunScheduledBackup, { now });
   },
 });
@@ -259,9 +263,10 @@ export const requeueOcr = internalAction({
 
 /** Drains pending deliveries whose `nextAttemptAt` has passed. */
 export const retryWebhooks = internalAction({
-  args: { now: v.string() },
+  args: { now: v.optional(v.string()) },
   returns: v.object({ retried: v.number() }),
-  handler: async (ctx, { now }): Promise<{ retried: number }> => {
+  handler: async (ctx, args): Promise<{ retried: number }> => {
+    const now = args.now ?? new Date().toISOString();
     const pending = await ctx.runQuery(internal.webhooks.dueDeliveries, { now });
     for (const deliveryId of pending) {
       await ctx.scheduler.runAfter(0, internal.webhooks.deliver, { deliveryId, now });

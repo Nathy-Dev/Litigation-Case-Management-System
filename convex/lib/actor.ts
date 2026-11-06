@@ -133,28 +133,28 @@ export type SessionVerdict = { live: true } | { live: false; reason: string };
  * do it and it costs one lookup; and going through the component's adapter would
  * make `lib/actor.ts` import `auth.ts`, which imports this file.
  *
- * **A missing projection allows the request.** The projection is only skipped
- * when the domain user does not exist, and such a caller is already refused a
- * step earlier - so in practice this branch is a fresh deployment or a test
- * harness holding an identity with no session row, and failing closed there would
- * refuse every request on a deployment nobody had yet signed into.
  */
 export async function sessionVerdict(
   ctx: AnyCtx,
   caller: Caller,
   settings?: Doc<'settings'> | null,
 ): Promise<SessionVerdict> {
-  if (caller.authSessionId === null) return { live: true };
+  if (caller.authSessionId === null) return { live: false, reason: 'This token has no session. Sign in again.' };
 
   const projection = await ctx.db
     .query('userSessions')
     .withIndex('by_authSessionId', (q) => q.eq('authSessionId', caller.authSessionId as string))
     .unique();
-  if (projection === null) return { live: true };
+  if (projection === null || projection.userId !== caller.user?._id) return { live: false, reason: 'This session cannot be verified. Sign in again.' };
 
   if (projection.revokedAt !== null) {
     return { live: false, reason: 'This session has been signed out. Sign in again.' };
   }
+
+  const configuredHours = Number(process.env.SESSION_MAX_HOURS ?? 12);
+  const maxHours = Number.isInteger(configuredHours) && configuredHours > 0 ? configuredHours : 12;
+  const expiry = projection.expiresAt ?? Date.parse(projection.startedAt) + maxHours * 3_600_000;
+  if (!Number.isFinite(expiry) || expiry <= Date.now()) return { live: false, reason: 'This session has expired. Sign in again.' };
 
   // The configurable idle timeout (TOR section 19). Better Auth's own
   // `session.expiresIn` is an *absolute* cap fixed at construction time and
@@ -171,7 +171,7 @@ export async function sessionVerdict(
   const idleMinutes = config?.sessionTimeoutMinutes ?? 0;
   if (idleMinutes > 0) {
     const lastSeen = Date.parse(projection.lastSeenAt);
-    if (!Number.isNaN(lastSeen) && Date.now() - lastSeen > idleMinutes * 60_000) {
+    if (!Number.isFinite(lastSeen) || Date.now() - lastSeen > idleMinutes * 60_000) {
       return {
         live: false,
         reason: `Signed out after ${idleMinutes} minutes of inactivity. Sign in again.`,

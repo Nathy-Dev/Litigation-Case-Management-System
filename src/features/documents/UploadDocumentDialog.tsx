@@ -7,6 +7,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea, Checkbox } from '@/components/ui/Input';
 import { FileDropzone } from '@/components/ui/FileDropzone';
+import { useDocumentFiles } from '@/hooks/useDocumentFiles';
+import type { Id } from '../../../convex/_generated/dataModel';
 
 const FORMAT_BY_EXTENSION: Record<string, DocumentFormat> = {
   pdf: 'pdf',
@@ -32,9 +34,10 @@ export function UploadDocumentDialog({
   caseRecord: CaseRecord;
 }) {
   const documentTypes = useDataStore((state) => state.documentTypes);
-  const uploadDocument = useDataStore((state) => state.uploadDocument);
+  const { upload } = useDocumentFiles();
   const settings = useDataStore((state) => state.settings);
   const user = useCurrentUser();
+  const [busy, setBusy] = useState(false);
 
   const [files, setFiles] = useState<File[]>([]);
   const [typeId, setTypeId] = useState(documentTypes[0]?.id ?? '');
@@ -50,35 +53,44 @@ export function UploadDocumentDialog({
     setError(undefined);
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (files.length === 0) {
       setError('Choose at least one file.');
       return;
     }
-    files.forEach((file) => {
-      const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-      uploadDocument(
-        {
-          caseId: caseRecord.id,
-          name: file.name,
-          documentTypeId: typeId,
-          format: FORMAT_BY_EXTENSION[extension] ?? 'pdf',
-          confidential: confidential || Boolean(chosenType?.requiresConfidentiality),
-          sizeBytes: file.size,
-          description,
-        },
-        user?.id ?? 'system',
-      );
-    });
-    notify({
-      variant: 'success',
-      title: files.length === 1 ? 'Document filed' : `${files.length} documents filed`,
-      description: settings.ocrEnabled
-        ? 'Queued for text extraction so the contents become searchable.'
-        : `Filed against ${caseRecord.caseId}.`,
-    });
-    reset();
-    onClose();
+    setBusy(true);
+    try {
+      for (const file of files) {
+        const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+        const format = FORMAT_BY_EXTENSION[extension];
+        if (!format) throw new Error('This file type is not supported.');
+        await upload(file,
+          {
+            caseId: caseRecord.id as Id<'cases'>,
+            name: file.name,
+            documentTypeId: typeId as Id<'documentTypes'>,
+            format,
+            confidential: confidential || Boolean(chosenType?.requiresConfidentiality),
+            description,
+            tags: [],
+          },
+        );
+        setFiles((remaining) => remaining.filter((candidate) => candidate !== file));
+      }
+      notify({
+        variant: 'success',
+        title: files.length === 1 ? 'Document filed' : `${files.length} documents filed`,
+        description: settings.ocrEnabled
+          ? 'Queued for text extraction so the contents become searchable.'
+          : `Filed against ${caseRecord.caseId}.`,
+      });
+      reset();
+      onClose();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Upload failed. Completed files are preserved; retry the remaining files.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -90,7 +102,7 @@ export function UploadDocumentDialog({
       footer={
         <>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={submit}>
+          <Button variant="primary" onClick={submit} disabled={busy || !user}>
             Upload {files.length > 0 ? `${files.length} file${files.length === 1 ? '' : 's'}` : ''}
           </Button>
         </>
@@ -103,7 +115,7 @@ export function UploadDocumentDialog({
             setFiles(next);
             setError(undefined);
           }}
-          hint="PDF, Word, Excel, images or Outlook messages · up to 25 MB each"
+          hint="PDF, Word, Excel, images or Outlook messages · up to 50 MB each"
         />
         {error && (
           <p role="alert" className="text-[12px] font-medium text-danger-600">

@@ -423,7 +423,7 @@ export const getDetail = authedQuery({
     // roles that never hold `note.create` - exactly as `notes.list` does, so
     // the detail bundle and the notes tab can never disagree about what an
     // external reader may see.
-    const hidesInternal = !ctx.actor.access.permissions.has('note.create');
+    const hidesInternal = ctx.actor.user.role === 'EXTERNAL_COUNSEL' || ctx.actor.user.role === 'READ_ONLY';
     const visibleNotes = hidesInternal ? notes.filter((note) => !note.internalOnly) : notes;
 
     const row = await buildRow(ctx, record, {

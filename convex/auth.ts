@@ -91,6 +91,12 @@ function positiveInt(raw: string | undefined, fallback: number): number {
  */
 const SESSION_MAX_HOURS = positiveInt(process.env.SESSION_MAX_HOURS, 12);
 
+function sessionExpiry(value: unknown): number {
+  const expiry = value instanceof Date ? value.getTime() : typeof value === 'number' ? value : Date.parse(String(value));
+  if (!Number.isFinite(expiry)) throw new Error('Invalid authentication session expiry.');
+  return expiry;
+}
+
 /**
  * How long the `/sign-in/email` throttle window is, and how many tries it allows.
  *
@@ -511,16 +517,17 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       session: {
         create: {
           after: async (session) => {
-            await run().runMutation(internal.authEvents.recordSessionCreated, {
-              authUserId: session.userId,
-              authSessionId: session.id,
+              await run().runMutation(internal.authEvents.recordSessionCreated, {
+                authUserId: session.userId,
+                authSessionId: session.id,
+                expiresAt: sessionExpiry(session.expiresAt),
               ipAddress: blankToNull(session.ipAddress),
               userAgent: blankToNull(session.userAgent),
             });
           },
         },
-        delete: {
-          after: async (session, context) => {
+          delete: {
+            after: async (session, context) => {
             // The path is the only evidence of *why*, and the audit trail should
             // not report an administrator who was never involved. A password
             // change and a reset both sweep sessions as a security measure; a
@@ -533,12 +540,17 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
                   ? ('password' as const)
                   : ('revoked' as const);
 
-            await run().runMutation(internal.authEvents.recordSessionEnded, {
-              authSessionId: session.id,
-              reason,
-            });
+              await run().runMutation(internal.authEvents.recordSessionEnded, {
+                authSessionId: session.id,
+                reason,
+              });
+            },
           },
-        },
+          update: {
+            after: async (session) => {
+              await run().runMutation(internal.authEvents.recordSessionRefreshed, { authUserId: session.userId, authSessionId: session.id, expiresAt: sessionExpiry(session.expiresAt) });
+            },
+          },
       },
       user: {
         update: {

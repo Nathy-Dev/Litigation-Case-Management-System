@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import { useCan } from './authStore';
 import type {
   AppNotification,
   AuditLogEntry,
@@ -266,14 +267,14 @@ export const useDataStore = create<DataStore>(() => ({
     mutations.setRolePermissions?.(role, permissions) ?? Promise.resolve(),
   upsertUser: (user, _actorId) => mutations.upsertUser?.(user) ?? Promise.resolve(),
   importUsers: (incoming, _actorId) => mutations.importUsers?.(incoming) ?? Promise.resolve(),
-  updateSettings: (patch, _actorId) => mutations.updateSettings?.(patch) ?? Promise.resolve(),
+  updateSettings: (patch, _actorId) => mutations.updateSettings?.(patch) ?? Promise.reject(new Error('Settings are still loading. Please try again.')),
   upsertCourt: (court, _actorId) => mutations.upsertCourt?.(court) ?? Promise.resolve(),
   upsertCaseType: (caseType, _actorId) => mutations.upsertCaseType?.(caseType) ?? Promise.resolve(),
   upsertDocumentType: (documentType, _actorId) =>
     mutations.upsertDocumentType?.(documentType) ?? Promise.resolve(),
   upsertTag: (tag, _actorId) => mutations.upsertTag?.(tag) ?? Promise.resolve(),
   deleteTag: (id, _actorId) => mutations.deleteTag?.(id) ?? Promise.resolve(),
-  runBackup: (_actorId) => mutations.runBackup?.() ?? Promise.resolve(),
+  runBackup: (_actorId) => mutations.runBackup?.() ?? Promise.reject(new Error('Backup controls are still loading. Please try again.')),
   revokeSession: (id, _actorId) => mutations.revokeSession?.(id) ?? Promise.resolve(),
   saveView: (view) => mutations.saveView?.(view) ?? Promise.resolve(),
   deleteSavedView: (id) => mutations.deleteSavedView?.(id) ?? Promise.resolve(),
@@ -320,6 +321,7 @@ function toCaseRecord(row: {
 }
 
 export function DataProvider() {
+  const canManageSystem = useCan('system.manage');
   const reference = useQuery(api.reference.bundle);
   const users = useQuery(api.users.list);
   const sessions = useQuery(api.users.sessions);
@@ -330,14 +332,13 @@ export function DataProvider() {
   const notifications = useQuery(api.notifications.list, {});
   const audit = useQuery(api.audit.list, {});
   const savedViews = useQuery(api.admin.savedViews);
+  const backups = useQuery(api.admin.listBackups, canManageSystem ? {} : 'skip');
 
   const createCaseMutation = useMutation(api.cases.createCase);
   const updateCaseMutation = useMutation(api.cases.updateCase);
   const changeCaseStatusMutation = useMutation(api.cases.changeCaseStatus);
   const archiveCaseMutation = useMutation(api.cases.archiveCase);
   const deleteCaseMutation = useMutation(api.cases.deleteCase);
-  const finalizeUploadMutation = useMutation(api.documents.finalizeUpload);
-  const addDocumentVersionMutation = useMutation(api.documents.addDocumentVersion);
   const toggleCheckOutMutation = useMutation(api.documents.toggleCheckOut);
   const deleteDocumentMutation = useMutation(api.documents.deleteDocument);
   const createCourtDateMutation = useMutation(api.courtDates.createCourtDate);
@@ -372,40 +373,8 @@ export function DataProvider() {
         changeCaseStatusMutation({ caseId: id as never, to: to as never, reason: reason as string }),
       archiveCase: (id: unknown) => archiveCaseMutation({ caseId: id as never }),
       deleteCase: (id: unknown) => deleteCaseMutation({ caseId: id as never }),
-      uploadDocument: (input: unknown) => {
-        const doc = input as {
-          caseId: string;
-          name: string;
-          documentTypeId: string;
-          format: string;
-          confidential: boolean;
-          sizeBytes: number;
-          description?: string;
-          tags?: string[];
-        };
-        return finalizeUploadMutation({
-          input: {
-            caseId: doc.caseId as never,
-            name: doc.name,
-            documentTypeId: doc.documentTypeId as never,
-            format: doc.format as never,
-            confidential: doc.confidential,
-            sizeBytes: doc.sizeBytes,
-            storageId: null,
-            storageKey: '',
-            description: doc.description ?? '',
-            tags: doc.tags ?? [],
-          } as never,
-        });
-      },
-      addDocumentVersion: (id: unknown, changeNote: unknown) =>
-        addDocumentVersionMutation({
-          id: id as never,
-          changeNote: changeNote as string,
-          sizeBytes: 0,
-          storageId: null,
-          storageKey: '',
-        }),
+      uploadDocument: async () => { throw new Error('Choose an actual file using the document upload dialog.'); },
+      addDocumentVersion: async () => { throw new Error('Choose an actual replacement file in the document viewer.'); },
       toggleCheckOut: (id: unknown) => toggleCheckOutMutation({ id: id as never }),
       deleteDocument: (id: unknown) => deleteDocumentMutation({ id: id as never }),
       createCourtDate: (input: unknown) => createCourtDateMutation({ input: input as never }),
@@ -468,8 +437,6 @@ export function DataProvider() {
     changeCaseStatusMutation,
     archiveCaseMutation,
     deleteCaseMutation,
-    finalizeUploadMutation,
-    addDocumentVersionMutation,
     toggleCheckOutMutation,
     deleteDocumentMutation,
     createCourtDateMutation,
@@ -555,6 +522,10 @@ export function DataProvider() {
   useEffect(() => {
     if (savedViews !== undefined) useDataStore.setState({ savedViews: savedViews as unknown as SavedView[] });
   }, [savedViews]);
+
+  useEffect(() => {
+    useDataStore.setState({ backups: canManageSystem ? (backups ?? []) as Dataset['backups'] : [] });
+  }, [backups, canManageSystem]);
 
   return null;
 }

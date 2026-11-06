@@ -6,13 +6,14 @@ import { internalAction } from './_generated/server';
 import { internal } from './_generated/api';
 import { backupScopeValidator, backupTypeValidator } from './shared/enums';
 import { authedAction } from './lib/functions';
+import type { ActionCtx } from './_generated/server';
 
 /**
  * HYPREP LCMS - backup/restore (TOR section 35).
  *
  * The authoritative disaster-recovery mechanism for this deployment is Convex's
  * own platform snapshots - the in-app backup is an *auditable artefact*, not a
- * substitute for the platform. It exports every table to a gzipped JSONL file in
+ * substitute for the platform. It exports selected application tables to a gzipped JSONL file in
  * Convex storage, records a real `sizeGb` in the `backups` ledger, and prunes
  * runs older than `settings.backupRetentionDays`.
  *
@@ -60,10 +61,20 @@ function serializeTable(name: TableName, rows: unknown[]): string {
 
 /** Reads a whole table. Typed as `Record` rows to keep the export generic. */
 async function collectTable(
-  ctx: { db: { query: (table: string) => { collect: () => Promise<unknown[]> } } },
+  ctx: ActionCtx,
   table: TableName,
 ): Promise<unknown[]> {
-  return await ctx.db.query(table).collect();
+  const rows: unknown[] = [];
+  let cursor: string | null = null;
+  let bytes = 0;
+  do {
+    const result: { page: unknown[]; isDone: boolean; continueCursor: string } = await ctx.runQuery(internal.backupDb.page, { table, paginationOpts: { cursor, numItems: 100 } });
+    rows.push(...result.page);
+    bytes += new TextEncoder().encode(JSON.stringify(result.page)).byteLength;
+    if (bytes > 20 * 1024 * 1024) throw new Error('This register exceeds the in-app export limit. Use a platform snapshot instead.');
+    cursor = result.isDone ? null : result.continueCursor;
+  } while (cursor);
+  return rows;
 }
 
 /** Gzips a JSONL export and returns it as a Blob for Convex storage. */
@@ -87,8 +98,9 @@ export const runBackup = authedAction({
   returns: v.object({ backupId: v.id('backups'), sizeGb: v.number() }),
   handler: async (
     ctx,
-    { type = 'Full', scope = 'Both' },
+    { type = 'Full', scope = 'Database' },
   ): Promise<{ backupId: Id<'backups'>; sizeGb: number }> => {
+    if (type !== 'Full' || scope !== 'Database') throw new Error('This tool creates a full application-record export only. File bytes, authentication and incremental backups require a Convex platform snapshot.');
     const backupId = await ctx.runMutation(internal.admin.internalStartBackup, {
       type,
       scope,
@@ -96,14 +108,15 @@ export const runBackup = authedAction({
     });
 
     try {
-      const chunks: Uint8Array[] = [];
+      const chunks: Uint8Array[] = [new TextEncoder().encode(JSON.stringify({ manifest: 'hyprep-domain-export-v1', createdAt: new Date().toISOString(), includes: 'Application records and document metadata', excludes: ['Stored file bytes', 'Authentication component', 'Atomic point-in-time snapshot'], restoreFormat: 'Not directly importable; use the platform snapshot for recovery' }) + '\n')];
       for (const table of EXPORT_TABLES) {
-        const rows = await collectTable(ctx as never, table);
+        const rows = await collectTable(ctx, table);
         chunks.push(new TextEncoder().encode(serializeTable(table, rows) + '\n'));
+        if (chunks.reduce((total, chunk) => total + chunk.byteLength, 0) > 20 * 1024 * 1024) throw new Error('This export exceeds the 20 MB limit. Use a platform snapshot.');
       }
 
       const blob = await gzipExport(chunks);
-      const sizeGb = Number((blob.size / 1_073_741_824).toFixed(4));
+      const sizeGb = blob.size / 1_073_741_824;
 
       const storageId = await ctx.storage.store(blob);
 
@@ -160,20 +173,19 @@ export const internalRunScheduledBackup = internalAction({
     const settings = await ctx.runQuery(internal.lib.functions.internalLoadSettings);
     if (settings === null) return { backupId: null, sizeGb: 0, skipped: true, reason: 'no settings row' };
 
-    const backupId = await ctx.runMutation(internal.admin.internalStartBackup, {
-      type: 'Full',
-      scope: 'Both',
-      triggeredById: null,
-    });
+    const claim = await ctx.runMutation(internal.backupDb.claimScheduledBackup, { now });
+    if (!claim.backupId) return { backupId: null, sizeGb: 0, skipped: true, reason: claim.reason ?? 'not due' };
+    const backupId = claim.backupId;
 
     try {
-      const chunks: Uint8Array[] = [];
+      const chunks: Uint8Array[] = [new TextEncoder().encode(JSON.stringify({ manifest: 'hyprep-domain-export-v1', createdAt: now, includes: 'Application records and document metadata', excludes: ['Stored file bytes', 'Authentication component', 'Atomic point-in-time snapshot'], restoreFormat: 'Not directly importable; use the platform snapshot for recovery' }) + '\n')];
       for (const table of EXPORT_TABLES) {
-        const rows = await collectTable(ctx as never, table);
+        const rows = await collectTable(ctx, table);
         chunks.push(new TextEncoder().encode(serializeTable(table, rows) + '\n'));
+        if (chunks.reduce((total, chunk) => total + chunk.byteLength, 0) > 20 * 1024 * 1024) throw new Error('This export exceeds the 20 MB limit. Use a platform snapshot.');
       }
       const blob = await gzipExport(chunks);
-      const sizeGb = Number((blob.size / 1_073_741_824).toFixed(4));
+      const sizeGb = blob.size / 1_073_741_824;
       const storageId = await ctx.storage.store(blob);
 
       await ctx.runMutation(internal.admin.internalCompleteBackup, {

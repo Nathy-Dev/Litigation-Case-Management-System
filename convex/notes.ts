@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { authedMutation, authedQuery } from './lib/functions';
-import { loadAccessibleCase, type AccessActor } from './lib/access';
+import { loadAccessibleCase } from './lib/access';
 import { nowIso } from './lib/rollups';
 
 /**
@@ -55,12 +55,12 @@ function visibleNotes(
     internalOnly: boolean;
     mentions: Id<'users'>[];
   }[],
-  actor: AccessActor,
+  role: string,
 ) {
   // EXTERNAL_COUNSEL and READ_ONLY never hold `note.create` (the permission the
   // Legal Unit's own staff carry), so the permission doubles as the role test
   // without reading the users table.
-  const hidesInternal = !actor.permissions.has('note.create');
+  const hidesInternal = role === 'EXTERNAL_COUNSEL' || role === 'READ_ONLY';
   const visible = notes.filter((note) => !(hidesInternal && note.internalOnly));
   return {
     notes: visible.map((note) => ({
@@ -82,17 +82,18 @@ function visibleNotes(
 
 /** The notes on one matter, newest first. Access-checked against the matter. */
 export const list = authedQuery({
-  permission: 'note.create',
+  permission: null,
   args: { caseId: v.id('cases') },
   returns: noteListResult,
   handler: async (ctx, { caseId }) => {
+    if (ctx.actor.user.role === 'READ_ONLY') throw new Error('Your role does not permit access to the notes surface (note.create).');
     await loadAccessibleCase(ctx, caseId, ctx.actor.access);
     const notes = await ctx.db
       .query('notes')
       .withIndex('by_case_createdAt', (q) => q.eq('caseId', caseId))
       .order('desc')
       .collect();
-    return visibleNotes(notes, ctx.actor.access);
+    return visibleNotes(notes, ctx.actor.user.role);
   },
 });
 

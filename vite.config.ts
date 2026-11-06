@@ -28,7 +28,9 @@ export default defineConfig(({ command, mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: false,
+      // Enable hidden source maps in production so Sentry can symbolicate
+      // stack traces without exposing the source to the browser.
+      sourcemap: environment.VITE_SENTRY_DSN ? 'hidden' : false,
       chunkSizeWarningLimit: 1200,
     },
   }

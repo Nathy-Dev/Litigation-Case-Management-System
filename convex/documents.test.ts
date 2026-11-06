@@ -45,8 +45,12 @@ test('anonymous callers cannot generate upload URLs', async () => {
 test('users without document upload permission cannot generate upload URLs', async () => {
   const t = convexTest(schema, modules);
   await seedReadOnlyUser(t);
+  await t.run(async (ctx) => {
+    const user = await ctx.db.query('users').withIndex('by_authUserId', (query) => query.eq('authUserId', AUTH_SUBJECT)).unique();
+    await ctx.db.insert('userSessions', { userId: user!._id, authSessionId: 'document-test-session', device: 'Desktop', browser: 'Test', ipAddress: '', location: '', startedAt: new Date().toISOString(), lastSeenAt: new Date().toISOString(), revokedAt: null });
+  });
 
-  const asReadOnly = t.withIdentity({ subject: AUTH_SUBJECT });
+  const asReadOnly = t.withIdentity({ subject: AUTH_SUBJECT, sessionId: 'document-test-session' });
   await expect(asReadOnly.mutation(api.documents.generateUploadUrl, {})).rejects.toThrow(
     /does not permit this action \(document\.upload\)/,
   );

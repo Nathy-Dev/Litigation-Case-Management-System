@@ -14,6 +14,7 @@ import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
 import type * as authEvents from "../authEvents.js";
 import type * as backup from "../backup.js";
+import type * as backupDb from "../backupDb.js";
 import type * as bootstrap from "../bootstrap.js";
 import type * as cases from "../cases.js";
 import type * as courtDates from "../courtDates.js";
@@ -67,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authEvents: typeof authEvents;
   backup: typeof backup;
+  backupDb: typeof backupDb;
   bootstrap: typeof bootstrap;
   cases: typeof cases;
   courtDates: typeof courtDates;

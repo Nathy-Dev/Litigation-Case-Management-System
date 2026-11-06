@@ -308,10 +308,11 @@ export const recordSessionCreated = internalMutation({
   args: {
     authUserId: v.string(),
     authSessionId: v.string(),
+    expiresAt: v.number(),
     ...requestContext,
   },
   returns: v.null(),
-  handler: async (ctx, { authUserId, authSessionId, ipAddress, userAgent }) => {
+  handler: async (ctx, { authUserId, authSessionId, expiresAt, ipAddress, userAgent }) => {
     const user = await userByAuthId(ctx, authUserId);
     // An auth account with no staff record cannot do anything (`requireActor`
     // refuses it), so there is no device to list and nothing to project.
@@ -331,6 +332,7 @@ export const recordSessionCreated = internalMutation({
       location: 'Unknown',
       startedAt: at,
       lastSeenAt: at,
+      expiresAt,
       revokedAt: null,
     });
 
@@ -401,6 +403,17 @@ export const recordSessionEnded = internalMutation({
       userAgent: null,
     });
 
+    return null;
+  },
+});
+
+export const recordSessionRefreshed = internalMutation({
+  args: { authUserId: v.string(), authSessionId: v.string(), expiresAt: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const projection = await ctx.db.query('userSessions').withIndex('by_authSessionId', (query) => query.eq('authSessionId', args.authSessionId)).unique();
+    const user = await userByAuthId(ctx, args.authUserId);
+    if (projection && user && projection.userId === user._id && projection.revokedAt === null) await ctx.db.patch(projection._id, { expiresAt: args.expiresAt });
     return null;
   },
 });

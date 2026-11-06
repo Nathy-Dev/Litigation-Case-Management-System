@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import schema from '../schema';
 import type { Doc, Id } from '../_generated/dataModel';
 import { authedMutation, authedQuery } from './functions';
+import { internal } from '../_generated/api';
 
 /**
  * HYPREP LCMS - the function wrapper test.
@@ -198,6 +199,58 @@ const probe = anyApi['lib/functions.test'] as unknown as ProbeApi;
 
 const AUTH_SUBJECT = 'auth_probe_subject';
 
+describe('session expiry enforcement', () => {
+  test('rejects an expired session even if its activity is recent', async () => {
+    const { t, as } = await setup({}, { sessionTimeoutMinutes: 0 });
+    await t.run(async (ctx) => {
+      const session = await ctx.db.query('userSessions').withIndex('by_authSessionId', (query) => query.eq('authSessionId', 'probe-session')).unique();
+      await ctx.db.patch(session!._id, { expiresAt: Date.now() - 1 });
+    });
+    await expect(as.query(probe.probeOpenQuery, {})).rejects.toThrow(/session has expired/);
+    await expect(as.mutation(probe.probeAudited, { label: 'Expired' })).rejects.toThrow(/session has expired/);
+    expect(await tagRows(t)).toHaveLength(0);
+  });
+
+  test('ends old legacy sessions instead of accepting them indefinitely', async () => {
+    const { t, as } = await setup({}, { sessionTimeoutMinutes: 0 });
+    await t.run(async (ctx) => {
+      const session = await ctx.db.query('userSessions').withIndex('by_authSessionId', (query) => query.eq('authSessionId', 'probe-session')).unique();
+      await ctx.db.patch(session!._id, { startedAt: '2000-01-01T00:00:00.000Z' });
+    });
+    await expect(as.query(probe.probeOpenQuery, {})).rejects.toThrow(/session has expired/);
+  });
+
+  test('uses refreshed expiry without treating token renewal as user activity', async () => {
+    const { t, as } = await setup({}, { sessionTimeoutMinutes: 0 });
+    const expiry = Date.now() + 60_000;
+    const before = await t.run((ctx) => ctx.db.query('userSessions').withIndex('by_authSessionId', (query) => query.eq('authSessionId', 'probe-session')).unique());
+    await t.mutation(internal.authEvents.recordSessionRefreshed, { authUserId: AUTH_SUBJECT, authSessionId: 'probe-session', expiresAt: expiry });
+    const refreshed = await t.run((ctx) => ctx.db.get(before!._id));
+    expect(refreshed?.expiresAt).toBe(expiry);
+    expect(refreshed?.lastSeenAt).toBe(before?.lastSeenAt);
+    await expect(as.query(probe.probeOpenQuery, {})).resolves.toBeDefined();
+  });
+
+  test('refuses malformed activity timestamps when idle timeout is enabled', async () => {
+    const { t, as } = await setup();
+    await t.run(async (ctx) => {
+      const session = await ctx.db.query('userSessions').withIndex('by_authSessionId', (query) => query.eq('authSessionId', 'probe-session')).unique();
+      await ctx.db.patch(session!._id, { lastSeenAt: 'not-a-date' });
+    });
+    await expect(as.query(probe.probeOpenQuery, {})).rejects.toThrow(/inactivity/);
+  });
+
+  test('refresh does not resurrect a signed-out session', async () => {
+    const { t, as } = await setup();
+    await t.run(async (ctx) => {
+      const session = await ctx.db.query('userSessions').withIndex('by_authSessionId', (query) => query.eq('authSessionId', 'probe-session')).unique();
+      await ctx.db.patch(session!._id, { revokedAt: new Date().toISOString(), expiresAt: Date.now() - 1 });
+    });
+    await t.mutation(internal.authEvents.recordSessionRefreshed, { authUserId: AUTH_SUBJECT, authSessionId: 'probe-session', expiresAt: Date.now() + 60_000 });
+    await expect(as.query(probe.probeOpenQuery, {})).rejects.toThrow(/signed out/);
+  });
+});
+
 type UserOverrides = Partial<Doc<'users'>>;
 
 async function seedUser(
@@ -276,7 +329,8 @@ async function setup(userOverrides: UserOverrides = {}, settingsOverrides = {}) 
   const t = convexTest({ schema });
   const userId = await seedUser(t, userOverrides);
   await seedSettings(t, settingsOverrides);
-  return { t, userId, as: t.withIdentity({ subject: AUTH_SUBJECT }) };
+  await t.run((ctx) => ctx.db.insert('userSessions', { userId, authSessionId: 'probe-session', device: 'Desktop', browser: 'Test', ipAddress: '', location: '', startedAt: new Date().toISOString(), lastSeenAt: new Date().toISOString(), revokedAt: null }));
+  return { t, userId, as: t.withIdentity({ subject: AUTH_SUBJECT, sessionId: 'probe-session' }) };
 }
 
 async function auditRows(t: ReturnType<typeof convexTest>) {
@@ -567,8 +621,9 @@ describe('security compliance', () => {
 
   test('with no settings row, compliance cannot block the bootstrap', async () => {
     const t = convexTest({ schema });
-    await seedUser(t, { mfaEnabled: false });
-    const as = t.withIdentity({ subject: AUTH_SUBJECT });
+    const userId = await seedUser(t, { mfaEnabled: false });
+    await t.run((ctx) => ctx.db.insert('userSessions', { userId, authSessionId: 'bootstrap-session', device: 'Desktop', browser: 'Test', ipAddress: '', location: '', startedAt: new Date().toISOString(), lastSeenAt: new Date().toISOString(), revokedAt: null }));
+    const as = t.withIdentity({ subject: AUTH_SUBJECT, sessionId: 'bootstrap-session' });
 
     // The state a deployment is in before the seed runs. Refusing writes here
     // would mean nothing could ever create the settings row.

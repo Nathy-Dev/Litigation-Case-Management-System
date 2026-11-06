@@ -35,7 +35,7 @@ const reportColumn = v.object({
 const reportResult = v.object({
   id: reportIdValidator,
   columns: v.array(reportColumn),
-  rows: v.array(v.object({})),
+  rows: v.array(v.record(v.string(), v.union(v.string(), v.number()))),
   caption: v.string(),
 });
 

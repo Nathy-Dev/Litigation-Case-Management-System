@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import type { Doc, Id } from './_generated/dataModel';
 import { internalMutation, internalQuery } from './_generated/server';
+import { internal } from './_generated/api';
 import { authedMutation, authedQuery } from './lib/functions';
 import { DEFAULT_PERMISSION_MATRIX } from './shared/permissions';
 import { DEFAULT_SETTINGS } from './seed/reference';
@@ -123,6 +124,7 @@ const backupRow = v.object({
   location: v.string(),
   status: v.string(),
   error: v.union(v.string(), v.null()),
+  archiveAvailable: v.boolean(),
 });
 
 // ---------------------------------------------------------------------------
@@ -135,7 +137,7 @@ export const listBackups = authedQuery({
   args: {},
   returns: v.array(backupRow),
   handler: async (ctx) => {
-    const backups = await ctx.db.query('backups').order('desc').collect();
+    const backups = await ctx.db.query('backups').withIndex('by_startedAt').order('desc').take(100);
     return backups.map((backup) => ({
       id: backup._id,
       startedAt: backup.startedAt,
@@ -146,6 +148,7 @@ export const listBackups = authedQuery({
       location: backup.location,
       status: backup.status,
       error: backup.error,
+      archiveAvailable: backup.status === 'completed' && backup.storageId !== null,
     }));
   },
 });
@@ -443,6 +446,7 @@ export const upsertTag = authedMutation({
       const existing = await ctx.db.get(input.id);
       if (existing) {
         await ctx.db.patch(input.id, { label: input.label, color: input.color });
+        await ctx.audit({ entityId: input.id, entityLabel: input.label });
         return { id: input.id };
       }
     }
@@ -527,8 +531,9 @@ export const deleteSavedView = authedMutation({
 /** The full backup ledger for the retention/prune cron. */
 export const internalListBackups = internalQuery({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
-    return await ctx.db.query('backups').order('desc').collect();
+    return await ctx.db.query('backups').withIndex('by_startedAt').order('desc').take(100);
   },
 });
 
@@ -542,10 +547,12 @@ export const internalCompleteBackup = internalMutation({
     status: v.union(v.literal('completed'), v.literal('failed')),
     error: v.union(v.string(), v.null()),
   },
+  returns: v.null(),
   handler: async (ctx, { id, completedAt, sizeGb, storageId, status, error }) => {
     const backup = await ctx.db.get(id);
-    if (backup === null) return;
+    if (backup === null) return null;
     await ctx.db.patch(id, { completedAt, sizeGb, storageId, status, error });
+    return null;
   },
 });
 
@@ -556,6 +563,7 @@ export const internalStartBackup = internalMutation({
     scope: backupScopeValidator,
     triggeredById: v.union(v.id('users'), v.null()),
   },
+  returns: v.id('backups'),
   handler: async (ctx, { type, scope, triggeredById }) => {
     const now = new Date().toISOString();
     return await ctx.db.insert('backups', {
@@ -564,7 +572,7 @@ export const internalStartBackup = internalMutation({
       type,
       scope,
       sizeGb: 0,
-      location: 'Convex storage',
+      location: 'Convex storage - application records only, not a recovery snapshot',
       status: 'running',
       storageId: null,
       triggeredById,
@@ -579,14 +587,17 @@ export const internalStartBackup = internalMutation({
  */
 export const internalPruneBackups = internalMutation({
   args: { now: v.string(), retentionDays: v.number() },
+  returns: v.object({ pruned: v.number() }),
   handler: async (ctx, { now, retentionDays }) => {
+    if (!Number.isFinite(Date.parse(now)) || !Number.isFinite(retentionDays) || retentionDays < 1) throw new Error('Invalid backup retention settings.');
     const cutoff = new Date(Date.parse(now) - retentionDays * 86_400_000).toISOString();
-    const rows = await ctx.db.query('backups').collect();
-    const expired = rows.filter((row) => row.completedAt !== null && row.completedAt < cutoff);
+    const rows = await ctx.db.query('backups').withIndex('by_startedAt', (query) => query.lt('startedAt', cutoff)).take(100);
+    const expired = rows.filter((row) => row.status !== 'running' && row.completedAt !== null && row.completedAt < cutoff);
     for (const row of expired) {
       if (row.storageId !== null) await ctx.storage.delete(row.storageId);
       await ctx.db.delete(row._id);
     }
+    if (rows.length === 100 && expired.length > 0) await ctx.scheduler.runAfter(0, internal.admin.internalPruneBackups, { now, retentionDays });
     return { pruned: expired.length };
   },
 });

@@ -20,6 +20,44 @@ import { authComponent, createAuth } from './auth';
 
 const http = httpRouter();
 
+function fileResponse(request: Request, body: BodyInit | null, status: number, headers = new Headers()): Response {
+  const allowed = [process.env.SITE_URL ?? 'http://localhost:5173', ...(process.env.FRONTEND_ORIGINS ?? '').split(',')]
+    .map((value) => { try { return new URL(value.trim()).origin; } catch { return null; } });
+  const origin = request.headers.get('origin');
+  headers.set('Cache-Control', 'private, no-store');
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('Referrer-Policy', 'no-referrer');
+  headers.set('Vary', 'Origin');
+  if (origin && allowed.includes(origin)) {
+    headers.set('Access-Control-Allow-Origin', origin);
+    headers.set('Access-Control-Expose-Headers', 'Content-Disposition');
+  }
+  return new Response(body, { status, headers });
+}
+
+http.route({ pathPrefix: '/exports/', method: 'GET', handler: httpAction(async (ctx, request) => {
+  const token = new URL(request.url).pathname.slice('/exports/'.length);
+  if (!/^[a-f0-9-]{36}$/.test(token)) return fileResponse(request, 'Not found', 404);
+  const ticket = await ctx.runQuery(internal.backupDb.readArchiveTicket, { token });
+  if (!ticket) return fileResponse(request, 'Link expired or access revoked', 403);
+  const file = await ctx.storage.get(ticket.storageId);
+  if (!file) return fileResponse(request, 'Archive unavailable', 404);
+  const headers = new Headers({ 'Content-Type': 'application/gzip', 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(ticket.filename)}` });
+  return fileResponse(request, file, 200, headers);
+}) });
+
+http.route({ pathPrefix: '/files/', method: 'GET', handler: httpAction(async (ctx, request) => {
+  const token = new URL(request.url).pathname.slice('/files/'.length);
+  if (!/^[a-f0-9-]{36}$/.test(token)) return fileResponse(request, 'Not found', 404);
+  const ticket = await ctx.runQuery(internal.documents.readFileTicket, { token });
+  if (!ticket) return fileResponse(request, 'Link expired or access revoked.', 403);
+  const file = await ctx.storage.get(ticket.storageId);
+  if (!file) return fileResponse(request, 'File unavailable', 404);
+  const headers = new Headers({ 'Content-Type': ticket.inline ? ticket.contentType : file.type || 'application/octet-stream', 'Content-Disposition': `${ticket.inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(ticket.name)}` });
+  if (ticket.inline) headers.set('Content-Security-Policy', "sandbox; default-src 'none'");
+  return fileResponse(request, file, 200, headers);
+}) });
+
 /** Better Auth's endpoints, mounted under `/api/auth`. */
 authComponent.registerRoutes(http, createAuth, { cors: true });
 
@@ -151,7 +189,7 @@ const getDocuments = httpAction(async (ctx, request) => {
 });
 
 http.route({ path: '/api/v1/cases', method: 'GET', handler: getCases });
-http.route({ path: '/api/v1/cases/:id', method: 'GET', handler: getCaseById });
+http.route({ pathPrefix: '/api/v1/cases/', method: 'GET', handler: getCaseById });
 http.route({ path: '/api/v1/hearings', method: 'GET', handler: getHearings });
 http.route({ path: '/api/v1/documents', method: 'GET', handler: getDocuments });
 

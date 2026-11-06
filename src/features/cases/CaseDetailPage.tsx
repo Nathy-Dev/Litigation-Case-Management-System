@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react';
+import { useAction } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowRightLeft,
@@ -32,6 +35,9 @@ import { NotesTab } from './tabs/NotesTab';
 import { RelatedTab } from './tabs/RelatedTab';
 
 export function CaseDetailPage() {
+  const exportDossier = useAction(api.documents.exportDossier);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
   const { caseId = '' } = useParams();
   const [params, setParams] = useSearchParams();
   const row = useCaseRow(caseId);
@@ -40,6 +46,7 @@ export function CaseDetailPage() {
   const tasks = useDataStore((state) => state.tasks);
   const notes = useDataStore((state) => state.notes);
   const canEdit = useCan('case.edit');
+  const canDownload = useCan('document.download');
   const canChangeStatus = useCan('case.status.change');
 
   const [statusOpen, setStatusOpen] = useState(false);
@@ -151,6 +158,12 @@ export function CaseDetailPage() {
         }
         actions={
           <>
+            {canDownload && <Button disabled={exporting} onClick={async () => {
+              setExporting(true); setExportError('');
+              try { const result = await exportDossier({ caseId: caseId as Id<'cases'> }); const link = document.createElement('a'); link.href = result.url; link.download = result.name; link.target = '_blank'; link.rel = 'noopener'; link.click(); }
+              catch (failure) { setExportError(failure instanceof Error ? failure.message : 'Export failed.'); }
+              finally { setExporting(false); }
+            }}>Export full dossier</Button>}
             <Button
               variant="ghost"
               onClick={() => window.print()}
@@ -180,6 +193,7 @@ export function CaseDetailPage() {
         }
       />
 
+      {exportError && <p role="alert" className="mb-4 text-sm text-danger-600">{exportError}</p>}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-4">
           <Card>

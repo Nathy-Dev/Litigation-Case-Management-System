@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 import {
   Archive,
   Database,
@@ -10,7 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { SystemSettings } from '@/types';
-import { formatDateTime, formatNumber, formatRelative } from '@/lib/format';
+import { formatBytes, formatDateTime, formatNumber, formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useDataStore } from '@/store/dataStore';
 import { useCan, useCurrentUser } from '@/store/authStore';
@@ -29,6 +31,9 @@ const BACKUP_TONE = { completed: 'brand', running: 'gold', failed: 'danger' } as
 
 /** Sessions, retention, storage and backups (TOR §30, §34–36). */
 export function AdminSystemPage() {
+  const downloadArchive = useMutation(api.backupDb.downloadArchive);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const settings = useDataStore((state) => state.settings);
   const sessions = useDataStore((state) => state.sessions);
   const backups = useDataStore((state) => state.backups);
@@ -44,6 +49,7 @@ export function AdminSystemPage() {
 
   const [draft, setDraft] = useState<Partial<SystemSettings>>({});
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const value = <K extends keyof SystemSettings>(key: K): SystemSettings[K] =>
     (draft[key] ?? settings[key]) as SystemSettings[K];
@@ -51,14 +57,17 @@ export function AdminSystemPage() {
     setDraft((current) => ({ ...current, [key]: next }));
 
   const dirty = Object.keys(draft).length > 0;
-  const save = () => {
-    updateSettings(draft, actor?.id ?? 'system');
-    setDraft({});
-    notify({
-      variant: 'success',
-      title: 'Settings saved',
-      description: 'The new values apply to every session from now on.',
-    });
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateSettings(draft, actor?.id ?? 'system');
+      setDraft({});
+      notify({ variant: 'success', title: 'Settings saved', description: 'The new values apply to every session from now on.' });
+    } catch (failure) {
+      notify({ variant: 'error', title: 'Settings were not saved', description: failure instanceof Error ? failure.message : 'Please try again.' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const quotaPct = Math.round((settings.storageUsedGb / settings.storageQuotaGb) * 100);
@@ -89,7 +98,7 @@ export function AdminSystemPage() {
         <StatCard
           label="Last backup"
           value={lastBackup ? formatRelative(lastBackup.startedAt) : 'None'}
-          hint={lastBackup ? `${lastBackup.type} · ${lastBackup.sizeGb.toFixed(1)} GB` : 'No backup on record'}
+          hint={lastBackup ? `${lastBackup.type} · ${formatBytes(lastBackup.sizeGb * 1_073_741_824)}` : 'No backup on record'}
           tone={lastBackup?.status === 'failed' ? 'danger' : 'default'}
           icon={<Database className="size-4" aria-hidden />}
         />
@@ -366,13 +375,13 @@ export function AdminSystemPage() {
         title="Backups"
         summary={
           lastBackup
-            ? `Last run ${formatRelative(lastBackup.startedAt)} · ${settings.backupSchedule} to the Abuja primary, replicated to Lagos`
+            ? `Last run ${formatRelative(lastBackup.startedAt)} · ${settings.backupSchedule} application records in Convex storage (not a recovery snapshot)`
             : 'No backup on record'
         }
         meta={
           lastBackup && (
             <Badge tone={BACKUP_TONE[lastBackup.status]} size="sm">
-              {lastBackup.status === 'completed' ? 'Healthy' : lastBackup.status === 'running' ? 'Running' : 'Failed'}
+              {lastBackup.status === 'completed' ? 'Export completed' : lastBackup.status === 'running' ? 'Running' : 'Failed'}
             </Badge>
           )
         }
@@ -386,17 +395,21 @@ export function AdminSystemPage() {
             </p>
             <Button
               size="sm"
-              onClick={() => {
-                runBackup(actor?.id ?? 'system');
-                notify({
-                  variant: 'success',
-                  title: 'Backup started',
-                  description: 'A full backup of the database and document store is running.',
-                });
+              onClick={async () => {
+                if (exportBusy) return;
+                setExportBusy(true);
+                try {
+                  await runBackup(actor?.id ?? 'system');
+                  notify({ variant: 'success', title: 'Record export completed', description: 'Application records were exported. File bytes and sign-in data require a separate platform snapshot.' });
+                } catch (error) {
+                  notify({ variant: 'error', title: 'Record export failed', description: error instanceof Error ? error.message : 'Please try again.' });
+                }
+                finally { setExportBusy(false); }
               }}
+              loading={exportBusy}
               icon={<Play className="size-4" aria-hidden />}
             >
-              Run backup now
+              Export application records
             </Button>
           </div>
         )}
@@ -415,7 +428,20 @@ export function AdminSystemPage() {
                   {formatDateTime(backup.startedAt)} · {backup.location}
                 </p>
               </div>
-              <span className="tnum shrink-0 text-[12px] text-ink-700">{backup.sizeGb.toFixed(1)} GB</span>
+              <span className="tnum shrink-0 text-[12px] text-ink-700">{formatBytes(backup.sizeGb * 1_073_741_824)}</span>
+              {backup.archiveAvailable && <Button size="sm" loading={downloading === backup.id} onClick={async () => {
+                setDownloading(backup.id);
+                try {
+                  const archive = await downloadArchive({ id: backup.id as never });
+                  const response = await fetch(archive.url);
+                  if (!response.ok) throw new Error('Archive download failed or access expired.');
+                  const url = URL.createObjectURL(await response.blob());
+                  const link = document.createElement('a'); link.href = url; link.download = archive.filename; link.click();
+                  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+                } catch (error) { notify({ variant: 'error', title: 'Download failed', description: error instanceof Error ? error.message : 'Please try again.' }); }
+                finally { setDownloading(null); }
+              }}>Download</Button>}
+              {backup.error && <span role="alert" className="text-[11px] text-danger-600">{backup.error}</span>}
               <Badge tone={BACKUP_TONE[backup.status]} size="sm">
                 {backup.status === 'completed'
                   ? 'Completed'
@@ -433,12 +459,12 @@ export function AdminSystemPage() {
           <p className="mr-auto text-[12px] text-ink-600">
             {dirty ? 'Unsaved changes to system settings.' : 'All settings saved.'}
           </p>
-          <Button disabled={!dirty} onClick={() => setDraft({})}>
+          <Button disabled={!dirty || saving} onClick={() => setDraft({})}>
             Discard
           </Button>
           <Button
             variant="primary"
-            disabled={!dirty}
+            disabled={!dirty || saving}
             onClick={save}
             icon={<Save className="size-4" aria-hidden />}
           >

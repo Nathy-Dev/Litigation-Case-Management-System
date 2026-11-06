@@ -106,6 +106,20 @@ const taskChecklistItem = v.object({
 });
 
 export default defineSchema({
+  fileTickets: defineTable({
+    token: v.string(),
+    storageId: v.id('_storage'),
+    documentId: v.optional(v.id('documents')),
+    inline: v.optional(v.boolean()),
+    contentType: v.optional(v.string()),
+    watermarked: v.optional(v.boolean()),
+    userId: v.id('users'),
+    authSessionId: v.union(v.string(), v.null()),
+    caseId: v.id('cases'),
+    permission: permissionValidator,
+    name: v.string(),
+    expiresAt: v.number(),
+  }).index('by_token', ['token']).index('by_expiry', ['expiresAt']),
   // -------------------------------------------------------------------------
   // Identity
   // -------------------------------------------------------------------------
@@ -205,6 +219,7 @@ export default defineSchema({
     location: v.string(),
     startedAt: v.string(),
     lastSeenAt: v.string(),
+    expiresAt: v.optional(v.number()),
     revokedAt: v.union(v.string(), v.null()),
   })
     .index('by_user', ['userId'])
@@ -598,8 +613,17 @@ export default defineSchema({
     .index('by_entity', ['entity'])
     .index('by_shared', ['shared']),
 
+  archiveTickets: defineTable({
+    token: v.string(),
+    backupId: v.id('backups'),
+    userId: v.id('users'),
+    authSessionId: v.string(),
+    expiresAt: v.number(),
+  }).index('by_token', ['token']),
+
   backups: defineTable({
     startedAt: v.string(),
+    scheduledAt: v.optional(v.string()),
     completedAt: v.union(v.string(), v.null()),
     type: backupTypeValidator,
     scope: backupScopeValidator,
@@ -612,6 +636,7 @@ export default defineSchema({
     error: v.union(v.string(), v.null()),
   })
     .index('by_startedAt', ['startedAt'])
+    .index('by_scheduledAt', ['scheduledAt'])
     .index('by_status', ['status']),
 
   /**

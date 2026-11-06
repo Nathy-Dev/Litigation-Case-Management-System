@@ -30,6 +30,27 @@ import type { DataModel } from "./dataModel.js";
 type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
+  readonly BETTER_AUTH_SECRET: string | undefined;
+  readonly BOOTSTRAP_SECRET: string | undefined;
+  readonly CONVEX_SITE_URL: string | undefined;
+  readonly EMAIL_FROM: string | undefined;
+  readonly EMAIL_PROVIDER: string | undefined;
+  readonly GOOGLE_CLOUD_VISION_KEY: string | undefined;
+  readonly RESEND_API_KEY: string | undefined;
+  readonly SENTRY_DSN: string | undefined;
+  readonly SITE_URL: string | undefined;
+  readonly SMS_PROVIDER: string | undefined;
+  readonly SMTP_HOST: string | undefined;
+  readonly SMTP_PASSWORD: string | undefined;
+  readonly SMTP_PORT: string | undefined;
+  readonly SMTP_USER: string | undefined;
+  readonly SSO_OIDC_CLIENT_ID: string | undefined;
+  readonly SSO_OIDC_CLIENT_SECRET: string | undefined;
+  readonly SSO_OIDC_DISCOVERY_URL: string | undefined;
+  readonly SSO_OIDC_ISSUER: string | undefined;
+  readonly TERMII_API_KEY: string | undefined;
+  readonly TERMII_SENDER_ID: string | undefined;
+  readonly TRUSTED_PROXIES: string | undefined;
 };
 
 /**

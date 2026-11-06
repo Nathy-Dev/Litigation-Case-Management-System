@@ -21,3 +21,4 @@ app.use(betterAuth);
 app.use(rateLimiter);
 
 export default app;
+

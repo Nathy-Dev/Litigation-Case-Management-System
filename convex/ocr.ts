@@ -89,6 +89,7 @@ export const extract = internalAction({
     if (!latest || latest.storageId === null) {
       await ctx.runMutation(internal.documents.internalSetOcrResult, {
         documentId,
+        version: latest?.version,
         ocrStatus: 'not_applicable',
         ocrText: null,
       });
@@ -99,6 +100,7 @@ export const extract = internalAction({
     if (!mime) {
       await ctx.runMutation(internal.documents.internalSetOcrResult, {
         documentId,
+        version: latest?.version,
         ocrStatus: 'not_applicable',
         ocrText: null,
       });
@@ -108,6 +110,7 @@ export const extract = internalAction({
     if (document.ocrAttempts >= MAX_ATTEMPTS) {
       await ctx.runMutation(internal.documents.internalSetOcrResult, {
         documentId,
+        version: latest?.version,
         ocrStatus: 'failed',
         ocrText: null,
       });
@@ -120,6 +123,7 @@ export const extract = internalAction({
       if (stored === null) {
         await ctx.runMutation(internal.documents.internalSetOcrResult, {
           documentId,
+          version: latest?.version,
           ocrStatus: 'failed',
           ocrText: null,
         });
@@ -129,6 +133,7 @@ export const extract = internalAction({
     } catch {
       await ctx.runMutation(internal.documents.internalSetOcrResult, {
         documentId,
+        version: latest?.version,
         ocrStatus: 'failed',
         ocrText: null,
       });
@@ -140,12 +145,14 @@ export const extract = internalAction({
 
       await ctx.runMutation(internal.documents.internalSetOcrResult, {
         documentId,
+        version: latest?.version,
         ocrStatus: 'completed',
         ocrText: text,
       });
     } catch {
       await ctx.runMutation(internal.documents.internalSetOcrResult, {
         documentId,
+        version: latest?.version,
         ocrStatus: 'failed',
         ocrText: null,
       });
