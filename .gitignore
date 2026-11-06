@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+backups/
+recovery-artifacts/
+*.snapshot.zip
+*.jsonl.gz
 *.local
 
 # Convex deployment config and secrets - never committed.
